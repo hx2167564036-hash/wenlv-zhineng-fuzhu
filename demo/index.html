@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文旅全场景智能助手 · 智慧文旅体验舱</title>
+<style>
+  :root{
+    --bg:#070d12; --bg2:#0a141c; --panel:rgba(255,255,255,.04);
+    --glass:rgba(255,255,255,.06); --glass-border:rgba(255,255,255,.10);
+    --ink:#e7eef4; --ink-soft:#a7b4c0; --ink-faint:#64707c;
+    --accent:#2dd4bf; --accent2:#38bdf8;
+    --radius:18px;
+    --shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  /* ===== Aurora 背景 ===== */
+  .aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;background:radial-gradient(1200px 800px at 80% -10%,#0f2a33 0%,transparent 60%),radial-gradient(1000px 700px at -10% 20%,#0a1f2b 0%,transparent 55%),var(--bg)}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;mix-blend-mode:screen;animation:float 18s ease-in-out infinite}
+  .blob.b1{width:480px;height:480px;background:#0d9488;top:-120px;left:-80px}
+  .blob.b2{width:420px;height:420px;background:#0369a1;bottom:-100px;right:-60px;animation-delay:-6s}
+  .blob.b3{width:360px;height:360px;background:#b45309;top:40%;left:55%;animation-delay:-12s;opacity:.3}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.1)}66%{transform:translate(-40px,30px) scale(.95)}}
+  .grid-noise{position:fixed;inset:0;z-index:-1;opacity:.04;background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 70%)}
+
+  /* ===== Hero ===== */
+  header{padding:72px 28px 30px;text-align:center;position:relative}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;letter-spacing:2px;color:var(--accent);padding:7px 16px;border:1px solid rgba(45,212,191,.3);border-radius:999px;background:rgba(45,212,191,.08);margin-bottom:22px;text-transform:uppercase}
+  .eyebrow .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-size:clamp(34px,6vw,64px);font-weight:800;letter-spacing:-1px;line-height:1.12}
+  h1 .grad{background:linear-gradient(100deg,#2dd4bf 0%,#38bdf8 40%,#fbbf24 75%,#fb7185 100%);background-size:250% 250%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gradshift 6s ease infinite}
+  @keyframes gradshift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  .sub{margin:20px auto 0;max-width:660px;font-size:16px;line-height:1.9;color:var(--ink-soft)}
+  .sub b{color:var(--ink)}
+  .stats{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .stat{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px 24px;text-align:center;min-width:120px;transition:.3s}
+  .stat:hover{transform:translateY(-4px);border-color:rgba(45,212,191,.4)}
+  .stat b{display:block;font-size:26px;font-weight:800;background:linear-gradient(120deg,#2dd4bf,#38bdf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat span{font-size:12px;color:var(--ink-soft)}
+
+  /* ===== Bento 网格 ===== */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  .section-title{display:flex;align-items:center;gap:12px;margin:52px 0 22px}
+  .section-title .bar{width:4px;height:22px;background:linear-gradient(#2dd4bf,#38bdf8);border-radius:2px}
+  .section-title h2{font-size:22px;font-weight:700}
+  .section-title span{font-size:13px;color:var(--ink-faint)}
+  .bento{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:960px){.bento{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.bento{grid-template-columns:1fr}}
+  .bcard{
+    position:relative;border-radius:var(--radius);padding:22px;cursor:pointer;overflow:hidden;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:var(--glass);
+    border:1px solid var(--glass-border);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s;
+  }
+  .bcard:hover{transform:translateY(-6px);border-color:var(--c);box-shadow:0 18px 44px rgba(0,0,0,.45),0 0 0 1px var(--c),0 0 28px -6px var(--c)}
+  .bcard.active{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 32px -6px var(--c)}
+  .bcard::before{content:'';position:absolute;inset:0;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),var(--c),transparent 55%);opacity:0;transition:opacity .35s}
+  .bcard:hover::before{opacity:.12}
+  .bcard .ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:23px;background:var(--c);color:#08121a;margin-bottom:14px;box-shadow:0 6px 18px -4px var(--c)}
+  .bcard h3{font-size:17px;font-weight:700;margin-bottom:3px}
+  .bcard .sk{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--c);display:block;margin-bottom:9px}
+  .bcard p{font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+  .bcard .go{position:absolute;top:18px;right:18px;font-size:12px;color:var(--c);opacity:0;transform:translateX(-6px);transition:.3s}
+  .bcard:hover .go{opacity:1;transform:none}
+  .bcard.wide{grid-column:span 2}
+  @media(max-width:960px){.bcard.wide{grid-column:span 2}}
+
+  /* ===== 工作台 ===== */
+  .workspace{
+    margin:46px 0 0;border-radius:24px;overflow:hidden;border:1px solid var(--glass-border);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:var(--panel);
+    box-shadow:var(--shadow);display:grid;grid-template-columns:1fr;position:relative;
+  }
+  .ws-head{padding:16px 22px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .ws-head .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .ws-head .ttl{font-size:16px;font-weight:700}
+  .ws-head .sk-badge{font-family:ui-monospace,monospace;font-size:11px;color:var(--accent);border:1px solid var(--accent);opacity:.7;padding:3px 9px;border-radius:7px}
+  .ws-head .hint{margin-left:auto;font-size:12px;color:var(--ink-faint)}
+  .ws-head .btn{font-size:12px;color:var(--ink-soft);background:transparent;border:1px solid var(--glass-border);border-radius:9px;padding:6px 13px;cursor:pointer;transition:.2s}
+  .ws-head .btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* 帮我想/帮我订/帮我办 三大入口 */
+  .modes{display:flex;gap:8px;padding:12px 22px 0;flex-wrap:wrap}
+  .mode{display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:9px 18px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,.03);cursor:pointer;transition:.25s;color:var(--ink-soft)}
+  .mode:hover{transform:translateY(-2px);border-color:var(--accent);color:var(--ink)}
+  .mode.on{background:linear-gradient(135deg,rgba(45,212,191,.2),rgba(56,189,248,.14));border-color:var(--accent);color:var(--ink);box-shadow:0 0 18px -6px var(--accent)}
+
+  .msgs{height:460px;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth}
+  .msgs::-webkit-scrollbar{width:8px}
+  .msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+  .msg{display:flex;gap:11px;max-width:88%;animation:msgIn .45s cubic-bezier(.2,.8,.2,1)}
+  @keyframes msgIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  .msg.user{align-self:flex-end;flex-direction:row-reverse}
+  .msg .av{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .msg.bot .av{background:linear-gradient(135deg,var(--accent),#0f766e)}
+  .msg.user .av{background:linear-gradient(135deg,#c68a3a,#b45309)}
+  .msg.human .av{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
+  .bubble{background:rgba(255,255,255,.05);border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px;font-size:13.5px;line-height:1.75;min-width:0}
+  .msg.user .bubble{background:linear-gradient(135deg,rgba(45,212,191,.22),rgba(56,189,248,.16));border-color:rgba(45,212,191,.3)}
+  .route{display:inline-flex;align-items:center;gap:7px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);border:1px solid rgba(45,212,191,.3);background:rgba(45,212,191,.08);padding:4px 9px;border-radius:7px;margin-bottom:10px;animation:routeIn .5s cubic-bezier(.2,.8,.2,1)}
+  @keyframes routeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+  .route .rstep{opacity:.7}
+  .route b{font-weight:700}
+  .bubble h4{font-size:13.5px;margin:10px 0 5px;color:var(--accent)}
+  .bubble ul{margin:5px 0 5px 18px}
+  .bubble li{margin:4px 0}
+  .bubble p{margin:5px 0}
+  .bubble .note{font-size:11.5px;color:var(--ink-faint);margin-top:8px}
+  .bubble .gold{color:#fbbf24;font-weight:600}
+
+  /* 满意度反馈 */
+  .fb{display:flex;gap:6px;align-items:center;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(255,255,255,.09);font-size:11.5px;color:var(--ink-faint)}
+  .fb span{cursor:pointer;padding:4px 8px;border-radius:8px;transition:.2s;user-select:none}
+  .fb span:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
+  .fb span.sel{background:rgba(45,212,191,.15);color:var(--accent)}
+
+  /* Multi-Agent 协同面板 */
+  .agents{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+  .agent{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--glass-border);border-radius:11px;background:rgba(255,255,255,.03);font-size:12.5px;opacity:0;transform:translateX(-8px);transition:.4s cubic-bezier(.2,.8,.2,1)}
+  .agent.show{opacity:1;transform:none}
+  .agent .a-ic{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f}
+  .agent .a-name{font-weight:700}
+  .agent .a-do{color:var(--ink-faint);font-size:11.5px;flex:1}
+  .agent .a-st{font-size:11px;color:var(--accent);font-family:ui-monospace,monospace;flex-shrink:0}
+  .agent.working .a-st{color:#fbbf24;animation:blinkText 1s infinite}
+  @keyframes blinkText{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* 可预订卡片 */
+  .bk{display:flex;gap:12px;align-items:center;border:1px solid var(--glass-border);border-radius:14px;padding:12px;margin:8px 0;background:rgba(255,255,255,.03);transition:.25s;cursor:default}
+  .bk:hover{border-color:var(--accent);box-shadow:0 0 20px -8px var(--accent)}
+  .bk .bk-img{width:58px;height:58px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(135deg,rgba(45,212,191,.25),rgba(56,189,248,.2))}
+  .bk .bk-info{flex:1;min-width:0}
+  .bk .bk-info b{display:block;font-size:13.5px}
+  .bk .bk-info span{font-size:11.5px;color:var(--ink-soft);display:block}
+  .bk .bk-info .stars{color:#fbbf24;font-size:11px}
+  .bk .bk-right{text-align:right;flex-shrink:0}
+  .bk .bk-right .pr{font-size:17px;font-weight:800;color:var(--accent)}
+  .bk .bk-right .pr small{font-size:10px;color:var(--ink-faint)}
+  .bk .bk-btn{margin-top:5px;font-size:11.5px;font-weight:700;padding:6px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;cursor:pointer;transition:.2s}
+  .bk .bk-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px -4px var(--accent)}
+  .bk .bk-btn.done{background:rgba(52,211,153,.2);color:#34d399;box-shadow:none;cursor:default}
+
+  /* 预算滑块 */
+  .budget{border:1px solid var(--glass-border);border-radius:13px;padding:13px 15px;margin:10px 0;background:rgba(255,255,255,.03)}
+  .budget .b-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:9px}
+  .budget .b-row b{color:var(--accent)}
+  input[type=range]{width:100%;appearance:none;height:6px;border-radius:4px;background:rgba(255,255,255,.1);outline:none}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:pointer;box-shadow:0 0 14px -2px var(--accent);transition:.2s}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+  .budget .b-tier{font-size:11.5px;color:var(--ink-soft)}
+  .budget .b-tier b{color:#fbbf24}
+
+  /* 操作按钮组 */
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .act{font-size:11.5px;padding:7px 13px;border-radius:9px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:var(--ink-soft);cursor:pointer;transition:.2s}
+  .act:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+
+  /* 行李清单 */
+  .pack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+  @media(max-width:640px){.pack{grid-template-columns:1fr}}
+  .pk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);padding:7px 10px;border:1px solid var(--glass-border);border-radius:9px;cursor:pointer;transition:.2s;user-select:none}
+  .pk:hover{border-color:var(--accent)}
+  .pk i{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--ink-faint);flex-shrink:0;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:10px;transition:.2s}
+  .pk.on{color:var(--ink);border-color:var(--accent)}
+  .pk.on i{background:var(--accent);border-color:var(--accent);color:#06120f}
+
+  /* 灵感卡片 */
+  .insp{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px 0}
+  @media(max-width:640px){.insp{grid-template-columns:1fr}}
+  .ins{border:1px solid var(--glass-border);border-radius:13px;padding:13px;background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));cursor:pointer;transition:.25s}
+  .ins:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 10px 26px -10px var(--accent)}
+  .ins .i-e{font-size:24px}
+  .ins b{display:block;font-size:13px;margin:6px 0 3px}
+  .ins span{font-size:11px;color:var(--ink-soft);line-height:1.5;display:block}
+  .ins .hot{display:inline-block;margin-top:6px;font-size:10px;color:#fb7185;border:1px solid rgba(251,113,133,.35);padding:2px 8px;border-radius:6px}
+
+  /* 翻译菜单卡 */
+  .menu-tr{border:1px solid var(--glass-border);border-radius:13px;overflow:hidden;margin:8px 0;max-width:340px}
+  .menu-tr .mt-h{background:rgba(45,212,191,.1);padding:9px 13px;font-size:11.5px;color:var(--accent);display:flex;align-items:center;gap:7px}
+  .menu-tr .mt-row{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.05)}
+  .menu-tr .mt-row .orig{color:var(--ink-faint);font-size:11px}
+  .menu-tr .mt-row b{display:block}
+  .menu-tr .mt-row .p{color:#fbbf24;font-weight:700}
+
+  /* 追问选项 */
+  .ask{font-size:13px;margin-bottom:4px}
+  .ask .q{color:#fbbf24;font-weight:700}
+
+  /* 人工客服 */
+  .human-card{border:1px solid rgba(167,139,250,.4);background:rgba(167,139,250,.08);border-radius:13px;padding:12px 14px;margin:6px 0;font-size:12.5px;line-height:1.7}
+
+  /* 场景专属组件 */
+  .kb-card{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,.03);margin:6px 0}
+  .kb-card .k{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#08121a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+  .timeline{border-left:2px solid var(--accent);margin:8px 0 8px 8px;padding-left:16px}
+  .t-item{position:relative;margin:10px 0}
+  .t-item::before{content:'';position:absolute;left:-21px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .t-item b{color:var(--accent)}
+  .phone{border:1px solid var(--glass-border);border-radius:16px;overflow:hidden;max-width:320px;margin:10px 0;background:#0c151c}
+  .phone .ph{background:#132029;padding:10px 12px;font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:8px}
+  .phone .ph .cir{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));flex-shrink:0}
+  .phone .pbody{padding:14px;font-size:12px;line-height:1.7;color:var(--ink-soft)}
+  .phone .pbody .ht{color:var(--ink);font-weight:700;margin-bottom:6px;font-size:13px}
+  .phone .pbody .tag{color:#fb7185;font-size:11px;margin-top:6px}
+  .score{display:flex;align-items:center;gap:9px;margin:7px 0;font-size:12.5px}
+  .score .lb{width:52px;color:var(--ink-soft);flex-shrink:0}
+  .score .bar{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+  .score .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 10px var(--accent)}
+  .score .val{width:34px;text-align:right;font-weight:700;color:var(--accent)}
+  .chart{display:flex;align-items:flex-end;gap:10px;height:130px;margin:12px 0;padding:0 4px}
+  .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .chart .col .bar{width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--accent),rgba(45,212,191,.15));animation:grow 1s cubic-bezier(.2,.8,.2,1);transform-origin:bottom;box-shadow:0 0 14px -4px var(--accent)}
+  @keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  .chart .col span{font-size:10px;color:var(--ink-faint)}
+  .donut-wrap{display:flex;align-items:center;gap:16px;margin:12px 0}
+  .donut{width:96px;height:96px;border-radius:50%;position:relative;flex-shrink:0}
+  .donut .hole{position:absolute;inset:14px;border-radius:50%;background:#0a141c;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+  .legend{font-size:12px;color:var(--ink-soft)}
+  .legend div{display:flex;align-items:center;gap:7px;margin:4px 0}
+  .legend .sw{width:10px;height:10px;border-radius:3px}
+  .flag{border:1px solid rgba(248,113,113,.4);background:rgba(248,113,113,.08);border-radius:11px;padding:10px 12px;font-size:12px;color:#fca5a5;margin:8px 0}
+  .quote{border-left:3px solid var(--accent);background:rgba(255,255,255,.03);padding:9px 12px;border-radius:0 10px 10px 0;font-size:12px;color:var(--ink-soft);margin:8px 0;font-style:italic}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+  .kpi{border:1px solid var(--glass-border);border-radius:12px;padding:11px;text-align:center;background:rgba(255,255,255,.03)}
+  .kpi b{display:block;font-size:18px;color:var(--accent);font-weight:800}
+  .kpi span{font-size:10.5px;color:var(--ink-faint)}
+  .rec{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--glass-border);border-radius:12px;padding:11px;margin:7px 0;background:rgba(255,255,255,.03)}
+  .rec .rk{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#08121a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+  .rec .rt{font-size:12px;line-height:1.6}
+  .rec .rt b{display:block;font-size:12.5px}
+  .rec .match{margin-left:auto;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0}
+
+  /* 打字指示 */
+  .typing{display:inline-flex;align-items:center;gap:4px;padding:4px 2px}
+  .typing i{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.2;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+  .thinking{font-size:12px;color:var(--ink-faint);font-family:ui-monospace,monospace;letter-spacing:.5px}
+
+  .composer{border-top:1px solid var(--glass-border);padding:14px 18px;background:rgba(0,0,0,.2)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{font-size:12px;padding:7px 14px;border-radius:999px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);cursor:pointer;transition:.25s;color:var(--ink-soft)}
+  .chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(45,212,191,.08);transform:translateY(-2px)}
+  .chip.qa{border-color:rgba(251,191,36,.45);color:#fbbf24}
+  .chip.qa:hover{background:rgba(251,191,36,.1)}
+  .input-row{display:flex;gap:10px;align-items:center}
+  .input-row input{flex:1;padding:13px 16px;border:1px solid var(--glass-border);border-radius:13px;font-size:14px;outline:none;background:rgba(255,255,255,.04);color:var(--ink);transition:.25s}
+  .input-row input::placeholder{color:var(--ink-faint)}
+  .input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,212,191,.14)}
+  .mic{width:46px;height:46px;border-radius:13px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.25s;flex-shrink:0}
+  .mic:hover{border-color:var(--accent)}
+  .mic.rec{border-color:#fb7185;background:rgba(251,113,133,.15);animation:micPulse 1s infinite}
+  @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,113,133,.4)}50%{box-shadow:0 0 0 8px rgba(251,113,133,0)}}
+  .send-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;border:none;border-radius:13px;padding:0 24px;height:46px;font-size:14px;font-weight:700;cursor:pointer;transition:.25s;letter-spacing:.5px;flex-shrink:0}
+  .send-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px -6px var(--accent)}
+  .send-btn:active{transform:scale(.96)}
+  .cs-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  .cs-row .csb{font-size:11.5px;color:var(--ink-faint);padding:5px 12px;border-radius:8px;border:1px dashed var(--glass-border);cursor:pointer;transition:.2s}
+  .cs-row .csb:hover{color:#a78bfa;border-color:#a78bfa}
+
+  /* Toast */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(10,20,28,.92);border:1px solid var(--accent);color:var(--ink);font-size:13px;padding:12px 22px;border-radius:13px;box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 20px -6px var(--accent);backdrop-filter:blur(12px);z-index:99;transition:.4s cubic-bezier(.2,.8,.2,1);pointer-events:none;opacity:0}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  footer{text-align:center;font-size:11px;color:var(--ink-faint);padding:34px 0 30px;line-height:1.8}
+
+  /* ===== 内容社区 Tabs（景区/酒店/攻略/交通） ===== */
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 20px}
+  .tab{padding:10px 20px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:var(--ink-soft);font-size:13.5px;cursor:pointer;transition:.25s;display:flex;align-items:center;gap:7px}
+  .tab:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .tab.on{background:linear-gradient(135deg,rgba(45,212,191,.22),rgba(56,189,248,.14));border-color:var(--accent);color:var(--ink);font-weight:700;box-shadow:0 0 20px -6px var(--accent)}
+  .pane{display:none;animation:paneIn .4s cubic-bezier(.2,.8,.2,1)}
+  .pane.on{display:block}
+  @keyframes paneIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* 景区图鉴 */
+  .dest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:960px){.dest-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.dest-grid{grid-template-columns:1fr}}
+  .dest{border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--glass);cursor:pointer;transition:.35s cubic-bezier(.2,.8,.2,1);position:relative}
+  .dest:hover{transform:translateY(-6px);box-shadow:0 18px 44px rgba(0,0,0,.5),0 0 24px -8px var(--accent);border-color:rgba(45,212,191,.4)}
+  .dest .d-img{height:150px;background-size:cover;background-position:center;position:relative}
+  .dest .d-img::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(7,13,18,.85))}
+  .dest .d-loc{position:absolute;bottom:10px;left:12px;z-index:1}
+  .dest .d-loc b{font-size:16px;display:block}
+  .dest .d-loc span{font-size:11px;color:var(--ink-soft)}
+  .dest .d-hot{position:absolute;top:10px;right:10px;z-index:1;font-size:10px;background:rgba(251,113,133,.85);color:#fff;padding:3px 9px;border-radius:999px;font-weight:700}
+  .dest .d-body{padding:12px 14px}
+  .dest .d-body p{font-size:12px;color:var(--ink-soft);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .dest .d-meta{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11.5px}
+  .dest .d-meta .rate{color:#fbbf24;font-weight:700}
+  .dest .d-meta .cnt{color:var(--ink-faint)}
+  .dest .d-tags{margin-top:8px;display:flex;gap:5px;flex-wrap:wrap}
+  .dest .d-tags i{font-style:normal;font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid var(--glass-border);color:var(--ink-soft)}
+
+  /* 详情弹窗 */
+  .modal-mask{position:fixed;inset:0;background:rgba(4,8,12,.7);backdrop-filter:blur(8px);z-index:80;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-mask.show{display:flex;animation:paneIn .3s}
+  .modal{width:min(760px,100%);max-height:88vh;overflow-y:auto;border-radius:22px;border:1px solid var(--glass-border);background:#0b151d;box-shadow:var(--shadow)}
+  .modal::-webkit-scrollbar{width:8px}
+  .modal::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+  .modal .m-hero{height:260px;background-size:cover;background-position:center;position:relative}
+  .modal .m-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,#0b151d)}
+  .modal .m-close{position:absolute;top:14px;right:14px;z-index:2;width:36px;height:36px;border-radius:50%;border:1px solid var(--glass-border);background:rgba(0,0,0,.5);color:var(--ink);font-size:16px;cursor:pointer;transition:.2s}
+  .modal .m-close:hover{border-color:var(--accent);color:var(--accent);transform:rotate(90deg)}
+  .modal .m-hero .m-title{position:absolute;bottom:16px;left:22px;z-index:1}
+  .modal .m-hero .m-title b{font-size:26px;display:block}
+  .modal .m-hero .m-title span{font-size:12.5px;color:var(--ink-soft)}
+  .modal .m-body{padding:20px 24px 26px}
+  .modal .m-body h5{font-size:14px;color:var(--accent);margin:18px 0 9px;display:flex;align-items:center;gap:7px}
+  .modal .m-body h5:first-child{margin-top:0}
+  .modal .m-body .intro{font-size:13.5px;line-height:1.85;color:var(--ink-soft)}
+  .m-info{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media(max-width:640px){.m-info{grid-template-columns:1fr}}
+  .m-info div{border:1px solid var(--glass-border);border-radius:11px;padding:10px 12px;font-size:12px;background:rgba(255,255,255,.03)}
+  .m-info b{display:block;font-size:11px;color:var(--ink-faint);margin-bottom:4px}
+  .rev{border:1px solid var(--glass-border);border-radius:13px;padding:12px 14px;margin:8px 0;background:rgba(255,255,255,.03)}
+  .rev .r-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .rev .r-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .rev .r-head b{font-size:12.5px}
+  .rev .r-head .plat{font-size:10px;padding:2px 8px;border-radius:6px;margin-left:auto;font-weight:700}
+  .plat.xhs{background:rgba(251,113,133,.15);color:#fb7185;border:1px solid rgba(251,113,133,.35)}
+  .plat.dy{background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.3)}
+  .plat.wb{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+  .rev p{font-size:12.5px;line-height:1.7;color:var(--ink-soft)}
+  .rev .r-ft{display:flex;gap:14px;margin-top:7px;font-size:11px;color:var(--ink-faint)}
+  .rev .r-ft .lk{cursor:pointer;transition:.2s;user-select:none}
+  .rev .r-ft .lk:hover,.rev .r-ft .lk.liked{color:#fb7185}
+  .m-ask{width:100%;margin-top:16px;padding:13px;border:none;border-radius:13px;font-size:14px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;cursor:pointer;transition:.25s}
+  .m-ask:hover{transform:translateY(-2px);box-shadow:0 10px 26px -8px var(--accent)}
+
+  /* 酒店 */
+  .hotel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:960px){.hotel-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.hotel-grid{grid-template-columns:1fr}}
+  .hotel{border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--glass);transition:.3s}
+  .hotel:hover{transform:translateY(-5px);border-color:rgba(45,212,191,.4);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+  .hotel .h-top{height:150px;display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;background-size:cover;background-position:center;transition:transform .45s ease}
+  .hotel:hover .h-top{transform:scale(1.05)}
+  .hotel .h-top::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.45),transparent 45%);pointer-events:none}
+  .hotel .h-top .h-badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid var(--glass-border)}
+  .hotel .h-body{padding:13px 15px}
+  .hotel .h-body b{font-size:15px}
+  .hotel .h-loc{font-size:11px;color:var(--ink-faint);margin:3px 0 7px}
+  .hotel .h-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+  .hotel .h-tags i{font-style:normal;font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(45,212,191,.1);color:var(--accent);border:1px solid rgba(45,212,191,.25)}
+  .hotel .h-rev{font-size:11.5px;color:var(--ink-soft);line-height:1.6;border-left:2px solid var(--accent);padding-left:9px;margin-bottom:10px}
+  .hotel .h-ft{display:flex;align-items:center;justify-content:space-between}
+  .hotel .h-ft .pr{font-size:19px;font-weight:800;color:var(--accent)}
+  .hotel .h-ft .pr small{font-size:10px;color:var(--ink-faint);font-weight:400}
+  .hotel .h-ft .hbtn{font-size:12px;font-weight:700;padding:8px 16px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;cursor:pointer;transition:.2s}
+  .hotel .h-ft .hbtn:hover{transform:translateY(-1px)}
+  .hotel .h-ft .hbtn.done{background:rgba(52,211,153,.2);color:#34d399;cursor:default}
+
+  /* 攻略社区 */
+  .feed{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:960px){.feed{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.feed{grid-template-columns:1fr}}
+  .post{border-radius:var(--radius);overflow:hidden;border:1px solid var(--glass-border);background:var(--glass);transition:.3s;cursor:pointer}
+  .post:hover{transform:translateY(-5px);border-color:rgba(45,212,191,.4);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+  .post .p-img{height:140px;background-size:cover;background-position:center}
+  .post .p-body{padding:13px 15px}
+  .post .p-body b{font-size:14px;line-height:1.45;display:block}
+  .post .p-body .exc{font-size:12px;color:var(--ink-soft);line-height:1.6;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .post .p-tags{margin-top:8px;display:flex;gap:5px;flex-wrap:wrap}
+  .post .p-tags i{font-style:normal;font-size:10px;color:#fb7185}
+  .post .p-ft{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.08)}
+  .post .p-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .post .p-ft .au{font-size:11.5px;color:var(--ink-soft)}
+  .post .p-ft .acts2{margin-left:auto;display:flex;gap:12px;font-size:11.5px;color:var(--ink-faint)}
+  .post .p-ft .acts2 span{cursor:pointer;transition:.2s;user-select:none}
+  .post .p-ft .acts2 span:hover,.post .p-ft .acts2 span.liked{color:#fb7185}
+
+  /* 交通票务 */
+  .trans-box{border:1px solid var(--glass-border);border-radius:var(--radius);background:var(--glass);overflow:hidden}
+  .trans-head{display:flex;gap:0;border-bottom:1px solid var(--glass-border)}
+  .trans-head .th{flex:1;text-align:center;padding:14px;font-size:14px;cursor:pointer;color:var(--ink-soft);transition:.2s;border-bottom:2px solid transparent}
+  .trans-head .th.on{color:var(--accent);font-weight:700;border-bottom-color:var(--accent);background:rgba(45,212,191,.06)}
+  .trans-form{display:flex;gap:10px;padding:16px;flex-wrap:wrap;align-items:center}
+  .trans-form input,.trans-form select{padding:11px 14px;border:1px solid var(--glass-border);border-radius:11px;background:rgba(255,255,255,.04);color:var(--ink);font-size:13px;outline:none;transition:.2s}
+  .trans-form input:focus,.trans-form select:focus{border-color:var(--accent)}
+  .trans-form .swap{width:38px;height:38px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+  .trans-form .swap:hover{border-color:var(--accent);transform:rotate(180deg)}
+  .trans-form .go{padding:11px 26px;border:none;border-radius:11px;font-size:13.5px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;cursor:pointer;transition:.2s}
+  .trans-form .go:hover{transform:translateY(-1px);box-shadow:0 8px 20px -6px var(--accent)}
+  .trans-form select option{background:#0b151d}
+  .ticket{display:flex;align-items:center;gap:16px;padding:15px 18px;border-top:1px solid rgba(255,255,255,.05);transition:.2s;animation:paneIn .4s}
+  .ticket:hover{background:rgba(45,212,191,.05)}
+  .ticket .t-time{text-align:center;min-width:74px}
+  .ticket .t-time b{font-size:17px;display:block}
+  .ticket .t-time span{font-size:10.5px;color:var(--ink-faint)}
+  .ticket .t-mid{flex:1;text-align:center;color:var(--ink-faint);font-size:11px}
+  .ticket .t-mid .dur{border-top:1px dashed rgba(255,255,255,.25);padding-top:4px;margin-top:2px;display:inline-block;min-width:120px}
+  .ticket .t-info{font-size:11.5px;color:var(--ink-soft);min-width:110px}
+  .ticket .t-info b{display:block;font-size:12.5px;color:var(--ink)}
+  .ticket .t-pr{text-align:right;margin-left:auto}
+  .ticket .t-pr b{font-size:19px;color:#fb923c;font-weight:800}
+  .ticket .t-pr small{font-size:10px;color:var(--ink-faint);display:block}
+  .ticket .t-btn{margin-left:14px;font-size:12px;font-weight:700;padding:9px 18px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06120f;cursor:pointer;transition:.2s;flex-shrink:0}
+  .ticket .t-btn:hover{transform:translateY(-1px)}
+  .ticket .t-btn.done{background:rgba(52,211,153,.2);color:#34d399;cursor:default}
+  .ticket .seat{font-size:10px;color:var(--accent);border:1px solid rgba(45,212,191,.3);padding:1px 7px;border-radius:5px;margin-left:6px}
+
+  /* 能力矩阵 */
+  .matrix{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:960px){.matrix{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.matrix{grid-template-columns:1fr}}
+  .mcol{border-radius:var(--radius);border:1px solid var(--glass-border);background:var(--glass);overflow:hidden}
+  .mcol .mc-h{padding:13px 15px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--glass-border)}
+  .mcol .mc-h .dotc{width:9px;height:9px;border-radius:50%;box-shadow:0 0 10px currentColor}
+  .mcol .mc-item{padding:11px 15px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:.2s}
+  .mcol .mc-item:last-child{border-bottom:none}
+  .mcol .mc-item:hover{background:rgba(45,212,191,.07);padding-left:19px}
+  .mcol .mc-item b{font-size:12.5px;display:block}
+  .mcol .mc-item span{font-family:ui-monospace,monospace;font-size:10px;color:var(--ink-faint)}
+  .mcol .mc-item p{font-size:11px;color:var(--ink-soft);margin-top:3px;line-height:1.5}
+  @media(max-width:640px){.kpis{grid-template-columns:1fr}.bcard.wide{grid-column:span 2}.msgs{height:400px}.input-row{flex-wrap:wrap}.send-btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grid-noise"></div>
+
+<header>
+  <div class="eyebrow"><span class="pulse"></span> AI · 智慧文旅全场景引擎</div>
+  <h1>文旅全场景<br><span class="grad">智能辅助 Skill 系统</span></h1>
+  <p class="sub">以 <b>轻量化智能 Skill 协同</b> 重构文旅运营 —— 覆盖<b>景区 · 酒店 · 餐饮</b>三大业态、八条业务线，融合<b>三步出行程、多智能体协同、一键预订、行中实时助手</b>等前沿体验。</p>
+  <div class="stats">
+    <div class="stat"><b>3</b><span>大核心业态</span></div>
+    <div class="stat"><b>8</b><span>条业务线</span></div>
+    <div class="stat"><b>5×20</b><span>能力Skill矩阵</span></div>
+    <div class="stat"><b>24/7</b><span>智能响应</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="section-title"><div class="bar"></div><h2>八大业务线</h2><span>点击任意业务线，在下方体验舱中交互演示</span></div>
+  <div class="bento" id="bento"></div>
+
+  <div class="workspace" id="workspace">
+    <div class="ws-head">
+      <span class="dot"></span>
+      <span class="ttl" id="wsTitle">智能总览</span>
+      <span class="sk-badge" id="wsSkill">wlt-tourism-assistant</span>
+      <span class="hint">输入自然语言，系统自动识别意图并路由</span>
+      <button class="btn" id="clearBtn">清空对话</button>
+    </div>
+    <div class="modes">
+      <div class="mode" data-mode="think">💡 帮我想 <span style="font-size:10px;opacity:.6">灵感·规划</span></div>
+      <div class="mode" data-mode="book">📅 帮我订 <span style="font-size:10px;opacity:.6">查询·预订</span></div>
+      <div class="mode" data-mode="do">✅ 帮我办 <span style="font-size:10px;opacity:.6">退改·售后</span></div>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="composer">
+      <div class="chips" id="chips"></div>
+      <div class="input-row">
+        <button class="mic" id="micBtn" title="语音输入（模拟）">🎙️</button>
+        <input id="input" type="text" placeholder="试试：帮我规划一个亲子3天行程…" />
+        <button class="send-btn" id="sendBtn">发送</button>
+      </div>
+      <div class="cs-row">
+        <span class="csb" id="humanBtn">👩‍💼 一键转人工</span>
+        <span class="csb" onclick="toast('已复制分享链接（模拟），可发送到家庭群协作编辑行程 🧡')">🔗 分享行程</span>
+        <span class="csb" onclick="toast('行程已导出为图文卡片（模拟）📤')">📤 导出行程卡</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 目的地图鉴 · 内容社区（对标携程） ===== -->
+<div class="wrap">
+  <div class="section-title"><div class="bar"></div><h2>目的地图鉴 · 内容社区</h2><span>景区图文介绍 · 游客体验 · 社媒口碑 · 酒店 · 攻略 · 交通票务</span></div>
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-pane="scenic">🏞️ 景区图鉴</div>
+    <div class="tab" data-pane="hotel">🏨 精选酒店</div>
+    <div class="tab" data-pane="feed">📝 攻略社区</div>
+    <div class="tab" data-pane="trans">🚄 机票·火车票</div>
+  </div>
+  <div class="pane on" id="pane-scenic"><div class="dest-grid" id="destGrid"></div></div>
+  <div class="pane" id="pane-hotel"><div class="hotel-grid" id="hotelGrid"></div></div>
+  <div class="pane" id="pane-feed"><div class="feed" id="feedGrid"></div></div>
+  <div class="pane" id="pane-trans">
+    <div class="trans-box">
+      <div class="trans-head">
+        <div class="th on" data-tt="flight">✈️ 机票</div>
+        <div class="th" data-tt="train">🚄 火车票</div>
+      </div>
+      <div class="trans-form">
+        <input id="fromCity" value="上海" style="width:110px">
+        <div class="swap" id="swapBtn" title="交换出发/到达">⇄</div>
+        <input id="toCity" value="北京" style="width:110px">
+        <input type="date" id="tripDate" value="2026-09-06">
+        <select id="seatSel"><option>不限舱位/座席</option><option>经济舱 / 二等座</option><option>公务舱 / 一等座</option><option>头等舱 / 商务座</option></select>
+        <button class="go" id="transSearch">查询</button>
+      </div>
+      <div id="ticketList"></div>
+    </div>
+  </div>
+
+  <div class="section-title"><div class="bar"></div><h2>五大能力分类 · 20个能力Skill</h2><span>数据 · 交互 · 生成 · 决策 · 执行，点击任意能力可向AI提问体验</span></div>
+  <div class="matrix" id="matrix"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 景区详情弹窗 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<footer>文旅全场景智能辅助 Skill 系统 · 智慧文旅体验舱（示例数据仅供实训演示，请以官方为准）</footer>
+
+<script>
+/* ================================================================
+   场景配置：8 条业务线
+================================================================ */
+const S = {
+  consult:{num:'①',name:'智能咨询应答',skill:'wlt-consult-answer',icon:'💬',c:'#2dd4bf',tag:'游客服务',
+    desc:'问答·导览·预订指引·行中实时助手（翻译/导览/改签），答得准 + 引导好',
+    chips:['景区几点开门？','翻译一下这个菜单','帮我导览当前景点','航班延误了怎么办？']},
+  planning:{num:'②',name:'个性化方案规划',skill:'wlt-trip-planning',icon:'🗺️',c:'#38bdf8',tag:'游客服务',
+    desc:'三步引导出行程 + 多智能体协同 + 预算滑块 + 一键预订',
+    chips:['我想出去玩','三步生成行程','情侣2日游怎么安排？','行李清单']},
+  marketing:{num:'③',name:'营销内容生成',skill:'wlt-marketing-content',icon:'🔥',c:'#fb7185',tag:'营销增长',
+    desc:'文案·短视频脚本·活动策划，直接产出可投放的营销成品',
+    chips:['写一篇暑期亲子游小红书文案','做一个短视频脚本','策划一场节庆促销活动']},
+  creative:{num:'④',name:'文创产品创新',skill:'wlt-cultural-creative',icon:'🎨',c:'#a78bfa',tag:'产品研发',
+    desc:'文创与服务产品创新赋能，把文化资源变成有记忆点的产品',
+    chips:['为古镇设计一款文创产品','设计一款景区雪糕','创新亲子服务体验']},
+  matching:{num:'⑤',name:'客源精准匹配',skill:'wlt-customer-matching',icon:'🎯',c:'#fbbf24',tag:'游客服务',
+    desc:'客群画像 × 产品标签精准匹配，每条推荐都有据可依',
+    chips:['情侣周末想放松，推荐什么？','推荐适合亲子的套餐','这位银发客人适合什么产品？']},
+  data:{num:'⑥',name:'文旅数据分析',skill:'wlt-data-analysis',icon:'📊',c:'#34d399',tag:'经营决策',
+    desc:'客流·营收·转化·复购洞察，从「凭经验」到「看数据」',
+    chips:['分析暑期营收下滑的原因','做个经营数据看板','预测下月客流趋势']},
+  quality:{num:'⑦',name:'智能客服质检',skill:'wlt-service-quality',icon:'🛡️',c:'#f87171',tag:'服务保障',
+    desc:'客服话术质检与服务评分，守住服务质量底线',
+    chips:['给这段客服对话打分','投诉话术怎么优化？','客服说「不知道」怎么扣分？']},
+  reputation:{num:'⑧',name:'舆情口碑管理',skill:'wlt-reputation',icon:'📣',c:'#fb923c',tag:'品牌声誉',
+    desc:'舆情监测与口碑诊断，守护品牌声誉、化解危机',
+    chips:['分析最近的差评','最近负面舆情怎么应对？','帮我看下口碑健康度']},
+};
+const defaultChips=['我想出去玩','三步生成行程','帮我订一家亲子酒店','翻译一下这个菜单','航班延误了怎么办？','写一篇暑期亲子游小红书文案','分析暑期营收下滑的原因','一键转人工'];
+
+/* ================================================================
+   工具
+================================================================ */
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ================================================================
+   意图识别（升级：含行中场景与售后场景）
+================================================================ */
+function detect(text){
+  const t=text, has=a=>a.some(k=>t.includes(k));
+  if(has(['分析','诊断','预测','看板','指标','数据','趋势','复盘','报表','营收','客流','转化率'])) return 'data';
+  if(has(['质检','评分','投诉','红线','服务质量','服务标准','客服','话术'])) return 'quality';
+  if(has(['舆情','口碑','差评','好评','危机','公关','声誉','负面'])) return 'reputation';
+  if(has(['文创','创意','伴手礼','纪念品','周边','特色产品','体验升级','雪糕','盲盒'])) return 'creative';
+  if(has(['文案','宣传','推广','海报','短视频','脚本','活动','促销','种草','小红书','公众号','抖音','策划'])) return 'marketing';
+  if(has(['退票','退订','改签','改期','取消','发票','售后','退款'])) return 'aftersale';
+  if(has(['翻译','导览','讲解','延误','改晚点','值机','寄存','行李寄存','天气','下雨'])) return 'ontrip';
+  if(has(['预订','订一','订个','订房','订酒店','订票','想订','查询订单','帮我订'])) return 'booking';
+  if(has(['规划','安排','行程','路线','攻略','几天','几日','怎么玩','住哪','吃什么','日游','度假','行李清单','我想出去玩','去哪玩','灵感'])) return 'planning';
+  if(has(['推荐','适合','匹配','画像','套餐','哪类','什么产品','放松'])) return 'matching';
+  return 'consult';
+}
+
+/* ================================================================
+   三步引导 · 多智能体 · 行程生成（Trip.Planner × 飞猪问一问 式）
+================================================================ */
+const WIZ_STEPS=[
+  {key:'dest',q:'想去哪里？',opts:[
+    {v:'杭州',e:'🌊',d:'西湖·灵隐·运河，人间天堂'},
+    {v:'苏州',e:'🏮',d:'园林·古镇·评弹，江南风韵'},
+    {v:'成都',e:'🐼',d:'大熊猫·火锅·宽窄巷子'},
+    {v:'云南',e:'🏔️',d:'大理·丽江·香格里拉'}]},
+  {key:'days',q:'玩几天？',opts:[
+    {v:'2天',e:'⚡',d:'周末快闪'},
+    {v:'3天',e:'⭐',d:'经典小长假'},
+    {v:'5天',e:'🌙',d:'深度慢游'}]},
+  {key:'pref',q:'和谁一起 / 什么偏好？',opts:[
+    {v:'亲子家庭',e:'👨‍👩‍👧',d:'遛娃不累，寓教于乐'},
+    {v:'情侣蜜月',e:'💑',d:'出片浪漫，仪式感'},
+    {v:'银发休闲',e:'🌿',d:'节奏舒缓，无障碍'},
+    {v:'美食打卡',e:'🍜',d:'本地味道一网打尽'}]},
+];
+let wiz=null;
+
+function startWizard(){
+  wiz={step:0,data:{}};
+  askStep();
+}
+function askStep(){
+  const st=WIZ_STEPS[wiz.step];
+  addMsg('bot',`<p class="ask"><span class="q">Q${wiz.step+1}/3</span> ${st.q}<span style="color:var(--ink-faint)">（点选或直接输入）</span></p>`,'wizard');
+  const chipsEl=document.getElementById('chips');
+  chipsEl.innerHTML='';
+  st.opts.forEach(o=>{
+    const sp=document.createElement('span');
+    sp.className='chip qa';
+    sp.innerHTML=`${o.e} ${o.v} · <span style="opacity:.65">${o.d}</span>`;
+    sp.onclick=()=>{answerWizard(o.v,o.e);};
+    chipsEl.appendChild(sp);
+  });
+}
+function answerWizard(v,e){
+  const st=WIZ_STEPS[wiz.step];
+  addMsg('user',`<p>${e||''} ${esc(v)}</p>`);
+  wiz.data[st.key]=v;
+  wiz.step++;
+  if(wiz.step<WIZ_STEPS.length){ askStep(); }
+  else{ renderChips(); runAgents(); }
+}
+
+/* 多智能体协同可视化 */
+function runAgents(){
+  setAccent(S.planning.c);
+  switchScenario('planning',true);
+  const agents=[
+    {ic:'🗺️',name:'路线定制师',do:'正在查询最优游览路线…'},
+    {ic:'🏨',name:'酒店顾问',do:'正在对比酒店价格与房态…'},
+    {ic:'🍜',name:'美食向导',do:'正在整理本地必吃清单…'},
+    {ic:'🎫',name:'票务管家',do:'正在核验门票库存与优惠…'},
+  ];
+  addMsg('bot',
+    `<div class="route"><span class="rstep">🧠 多智能体协同</span> → <b>4 个专业 Agent 并行工作</b></div>
+     <div class="agents" id="agbox"></div>
+     <span class="thinking" id="agsum">并行编排中…</span>`,
+    {skill:'wlt-trip-planning × Multi-Agent',scene:'方案规划'});
+  const box=document.getElementById('agbox');
+  agents.forEach((a,i)=>{
+    setTimeout(()=>{
+      const d=document.createElement('div');
+      d.className='agent working show';
+      d.innerHTML=`<div class="a-ic">${a.ic}</div><b class="a-name">${a.name}</b><span class="a-do">${a.do}</span><span class="a-st">查询中…</span>`;
+      box.appendChild(d);
+      msgs.scrollTop=msgs.scrollHeight;
+      setTimeout(()=>{
+        d.classList.remove('working');
+        d.querySelector('.a-st').textContent='✓ 完成';
+        d.querySelector('.a-do').textContent=agentDoneText[i];
+      },900);
+    },i*420);
+  });
+  setTimeout(()=>{
+    const s=document.getElementById('agsum');
+    if(s) s.textContent='✓ 4 个 Agent 已完成协同，为您生成方案 ↓';
+    addItinerary();
+  },agents.length*420+1100);
+}
+const agentDoneText=['已生成 3 日主题动线','已锁定 3 家优选酒店','已筛选 6 家口碑餐厅','已核验门票与早鸟优惠'];
+
+/* 生成行程卡：可预订 + 预算滑块 + 行李清单入口 */
+function addItinerary(){
+  const d=wiz.data;
+  const pref=d.pref||'亲子家庭';
+  let theme='';
+  if(pref.includes('亲子')) theme=`<div class="t-item"><b>Day1</b>：萌宠乐园（上午人少）→ 亲子餐厅 → 水上乐园 → 夜光巡游</div><div class="t-item"><b>Day2</b>：非遗工坊动手体验 → 自然课堂研学</div><div class="t-item"><b>Day3</b>：亲子互动馆 → 文创街区采购返程</div>`;
+  else if(pref.includes('情侣')) theme=`<div class="t-item"><b>Day1</b>：${d.dest}经典漫步 → 临河景观餐厅 → 山顶日落 → 夜游演艺+温泉</div><div class="t-item"><b>Day2</b>：自然醒+酒店下午茶 → 文创街区打卡 → 返程</div><div class="t-item"><b>Day3</b>：写真旅拍 → 伴手礼采购 → 返程</div>`;
+  else if(pref.includes('银发')) theme=`<div class="t-item"><b>Day1</b>：博物馆+园林（配讲解）→ 养生午餐 → 入住低楼层电梯房</div><div class="t-item"><b>Day2</b>：游船赏景（不爬坡）→ 茶楼听戏 → 清淡晚餐</div><div class="t-item"><b>Day3</b>：非遗坐姿手工 → 采购伴手礼返程</div>`;
+  else theme=`<div class="t-item"><b>Day1</b>：老城CityWalk → 本地菜市 → 夜市小吃巡礼</div><div class="t-item"><b>Day2</b>：招牌餐厅午市 → 特色街区 → 排队名店错峰打卡</div><div class="t-item"><b>Day3</b>：伴手礼选购（可真空邮寄）→ 返程</div>`;
+  addMsg('bot',`
+    <h4>🗺️ ${d.dest} ${d.days} · ${pref}专属方案</h4>
+    <div class="timeline">${theme}</div>
+    <h4>🏨 优选住宿（可预订）</h4>
+    ${bkCard('hotel','湖畔亲子主题房','亲子设施齐全 · 含3早 · 近乐园','4.8分 · 2316条评价','¥720','/晚')}
+    ${bkCard('ticket','景区成人票（早鸟）','提前1天可退 · 1.2m以下免票','免排队 快速入园','¥108','/张')}
+    <div class="budget">
+      <div class="b-row"><span>💰 预算调节</span><span>当前：<b id="bt">¥3,200</b> · <b id="tp">舒适型</b></span></div>
+      <input type="range" min="1500" max="6000" step="100" value="3200" id="bslider" oninput="budgetAdj(this.value)">
+      <div class="b-tier" id="bdesc">舒适型：优选四钻酒店 + 标准餐饮 + 全部核心景点</div>
+    </div>
+    <div class="acts">
+      <span class="act" onclick="toast('行程已分享到家庭群（模拟），家人可协作编辑 🧡')">🔗 分享协作</span>
+      <span class="act" onclick="showPackList()">🧳 生成行李清单</span>
+      <span class="act" onclick="toast('已生成手绘行程图（模拟），可保存发朋友圈 🎨')">🎨 手绘行程图</span>
+    </div>
+    <p class="gold">✨ 二次消费：演艺票 / 研学课程 / 旅拍 / 伴手礼</p>
+    <p class="note">* 示例数据仅供演示，价格以官方为准。</p>`,
+    {skill:'wlt-trip-planning',scene:'方案规划'});
+  wiz=null;
+}
+function bkCard(type,title,sub,rating,price,unit){
+  const ic=type==='hotel'?'🏨':'🎫';
+  return `<div class="bk">
+    <div class="bk-img">${ic}</div>
+    <div class="bk-info"><b>${title}</b><span>${sub}</span><span class="stars">⭐ ${rating}</span></div>
+    <div class="bk-right"><div class="pr">${price}<small>${unit}</small></div><button class="bk-btn" onclick="bookBtn(this,'${title}')">立即预订</button></div>
+  </div>`;
+}
+function bookBtn(btn,name){
+  btn.textContent='✓ 已预订';btn.classList.add('done');
+  toast(`「${name}」预订成功（模拟）· 订单号 WL${Date.now().toString().slice(-8)}`);
+}
+function budgetAdj(v){
+  const t=document.getElementById('bt'),tp=document.getElementById('tp'),d=document.getElementById('bdesc');
+  if(!t)return;
+  t.textContent='¥'+Number(v).toLocaleString();
+  if(v<2200){tp.textContent='经济型';d.innerHTML='经济型：高性价比三钻酒店 + 本地小吃 + 核心景点';}
+  else if(v<4200){tp.textContent='舒适型';d.innerHTML='舒适型：优选四钻酒店 + 标准餐饮 + 全部核心景点';}
+  else{tp.textContent='品质型';d.innerHTML='品质型：五钻/景观房 + 特色餐厅 + 全景点 + 演艺+旅拍';}
+}
+function showPackList(){
+  const items=['身份证/学生证','充电宝·数据线','防晒霜·遮阳帽','常用药·创可贴','雨伞（应对多变天气）','儿童水杯·零食','换洗衣物·薄外套','真空袋（装伴手礼）'];
+  addMsg('bot',`<h4>🧳 智能行李清单（${wiz?'':''}根据目的地天气与行程生成）</h4>
+    <div class="pack">${items.map(i=>`<div class="pk" onclick="this.classList.toggle('on');this.querySelector('i').textContent=this.classList.contains('on')?'✓':''"><i></i>${i}</div>`).join('')}</div>
+    <p class="note">✅ 出发前一天会推送清单提醒；已装项可勾选打卡。</p>`,
+    {skill:'wlt-trip-planning',scene:'方案规划 · 行前助手'});
+}
+
+/* ================================================================
+   行中实时助手（TripGenie 式：翻译 / 导览 / 延误改签）
+================================================================ */
+function renderOntrip(t){
+  if(t.includes('翻译')||t.includes('菜单')){
+    const rows=[['西湖醋鱼','West Lake Fish in Vinegar Gravy','¥88'],['龙井虾仁','Shrimp with Longjing Tea','¥98'],['东坡肉','Dongpo Pork (Braised Pork Belly)','¥68'],['片儿川','Pian Er Chuan Noodles','¥28']];
+    return `<h4>🌐 AI 菜单翻译（拍照识别 · 模拟）</h4>
+      <div class="menu-tr">
+        <div class="mt-h">📷 已识别菜单 · 中文 ⇄ English · 点击行可与服务员展示</div>
+        ${rows.map(r=>`<div class="mt-row" onclick="toast('已放大展示给服务员（模拟）👁️')"><div><b>${r[0]}</b><span class="orig">${r[1]}</span></div><span class="p">${r[2]}</span></div>`).join('')}
+      </div>
+      <p class="gold">✨ 每道菜附口味与忌口提示，点菜不踩雷。</p>
+      <p class="note">* 对标 TripGenie 菜单助手：拍纸质菜单→可交互电子菜单。</p>`;
+  }
+  if(t.includes('导览')||t.includes('讲解')){
+    return `<h4>📸 实时导览（摄像头识别 · 模拟）</h4>
+      <div class="kb-card"><span class="k">🏛️</span><div><b style="color:var(--accent)">已识别：雷峰塔遗址</b><br><span style="color:var(--ink-soft)">「雷峰塔始建于977年，吴越国王钱俶为供奉佛螺髻发而建……」——正在为您语音播报</span></div></div>
+      <ul>
+        <li><b>当前点位</b>：第2层展陈区，前方30米为电梯入口；</li>
+        <li><b>玩法建议</b>：登顶俯瞰西湖全景（约15分钟），日落时段最佳；</li>
+        <li><b>周边推荐</b>：步行8分钟「湖畔茶社」，可点龙井歇脚。</li>
+      </ul>
+      <p class="note">* 对标 TG 实时导览：识别画面→专业讲解+动线引导。</p>`;
+  }
+  /* 默认：延误改签 */
+  return `<h4>🛫 航班延误 · 智能改签建议</h4>
+    <div class="flag">⚠️ 已检测到您的航班 MU5107 延误预计 2.5 小时（示例），可能影响晚间入园。</div>
+    <ul>
+      <li><b>方案①</b>：免费改签同日更早航班 MU5103（余票6张，流程自动预填）；</li>
+      <li><b>方案②</b>：保留原航班，我把今晚夜游演艺预约顺延至明晚（已为您锁定）；</li>
+      <li><b>补偿</b>：延误2小时以上可领机场餐券¥50（一键申领）。</li>
+    </ul>
+    <div class="acts"><span class="act" onclick="toast('已提交改签申请（模拟）✈️')">改签 MU5103</span><span class="act" onclick="toast('夜游演艺已顺延至明晚（模拟）🌙')">顺延演艺</span><span class="act" onclick="toast('餐券申领成功（模拟）🍗')">领取餐券</span></div>
+    <p class="note">* 对标 TripGenie 实时行程调整：延误→自动改签+行程联动。</p>`;
+}
+
+/* ================================================================
+   售后助手（帮我办）
+================================================================ */
+function renderAftersale(t){
+  return `<h4>✅ 售后事务 · 快速办理</h4>
+    <div class="kb-card"><span class="k">↩️</span><div><b style="color:var(--accent)">退票/退订</b><br><span style="color:var(--ink-soft)">门票提前1天可全额退；酒店按取消政策执行。告诉我订单号即可代办。</span></div></div>
+    <div class="kb-card"><span class="k">🧾</span><div><b style="color:var(--accent)">开发票</b><br><span style="color:var(--ink-soft)">电子普票/专票均可，抬头信息我帮您自动带出（需授权）。</span></div></div>
+    <div class="kb-card"><span class="k">🔄</span><div><b style="color:var(--accent)">改期/改签</b><br><span style="color:var(--ink-soft)">支持一次免费改期，差价自动计算。</span></div></div>
+    <div class="acts"><span class="act" onclick="toast('退款申请已受理，1-3个工作日原路退回（模拟）')">申请退款</span><span class="act" onclick="toast('电子发票已开具并发送至邮箱（模拟）📧')">开电子发票</span><span class="act" onclick="humanAgent()">转人工客服</span></div>`;
+}
+
+/* ================================================================
+   预订助手（帮我订）：可预订卡片
+================================================================ */
+function renderBooking(t){
+  const fam=t.includes('亲子');
+  const list=fam?[
+    ['湖畔亲子主题房','含儿童床围+3早 · 距乐园步行5分钟','4.8分 · 2316条','¥720','/晚'],
+    ['萌宠乐园亲子套票','2大1小 · 含互动馆+巡游','4.9分 · 5302条','¥298','/套'],
+    ['非遗研学半日营','扎染/木版年画 · 含材料与证书','4.7分 · 886条','¥128','/人'],
+  ]:[
+    ['湖景双床房','高层观景 · 含双早','4.7分 · 1892条','¥520','/晚'],
+    ['景区成人票（早鸟）','提前1天可退 · 快速入园','4.8分 · 1.2万条','¥108','/张'],
+    ['夜游演艺 VIP 席','最佳观演位 · 含伴手礼','4.9分 · 3320条','¥168','/张'],
+  ];
+  return `<h4>📅 智能预订（实时房态与库存 · 模拟）</h4>
+    ${list.map(i=>`<div class="bk"><div class="bk-img">🧾</div><div class="bk-info"><b>${i[0]}</b><span>${i[1]}</span><span class="stars">⭐ ${i[2]}</span></div><div class="bk-right"><div class="pr">${i[3]}<small>${i[4]}</small></div><button class="bk-btn" onclick="bookBtn(this,'${i[0]}')">立即预订</button></div></div>`).join('')}
+    <p class="gold">✨ 价格随库存实时波动，建议尽早锁定。</p>
+    <p class="note">* 对标程心AI「AI+实时预订」：对话即下单。</p>`;
+}
+
+/* ================================================================
+   灵感推荐（帮我想 / Trip.Trends 式）
+================================================================ */
+function renderInspiration(){
+  const cards=[
+    ['🌊','杭州 · 西湖茶事','3天2晚 · 采茶+茶宴+夜游','本周热搜 ↑38%'],
+    ['🏮','苏州 · 园林夜宿','2天1晚 · 网师园夜游+评弹','新晋爆款'],
+    ['🐼','成都 · 熊猫亲子营','4天3晚 · 基地研学+川菜课','亲子榜 TOP1'],
+    ['🏔️','云南 · 风花雪月','5天4晚 · 洱海骑行+古城慢生活','情侣最爱'],
+  ];
+  return `<h4>💡 本周灵感推荐（基于全网热度 · 模拟）</h4>
+    <div class="insp">${cards.map(c=>`<div class="ins" onclick="input.value='帮我规划${c[1].split(' · ')[0]}${c[1].split(' · ')[1].includes('天')?'行程':''}';send()"><span class="i-e">${c[0]}</span><b>${c[1]}</b><span>${c[2]}</span><span class="hot">${c[3]}</span></div>`).join('')}</div>
+    <p class="gold">✨ 点选任意灵感，直接进入三步行程生成。</p>
+    <p class="note">* 对标 Trip.Trends：搜索热度→旅行灵感激发。</p>`;
+}
+
+/* ================================================================
+   原八条业务线响应渲染
+================================================================ */
+function respond(text){
+  const key=detect(text);
+  if(key==='ontrip') return {key:'consult',skill:'wlt-consult-answer',scene:'咨询应答 · 行中助手',html:renderOntrip(text)};
+  if(key==='aftersale') return {key:'consult',skill:'wlt-consult-answer',scene:'咨询应答 · 售后办理',html:renderAftersale(text)};
+  if(key==='booking') return {key:'consult',skill:'wlt-consult-answer',scene:'咨询应答 · 智能预订',html:renderBooking(text)};
+  if(key==='planning'&&(text.includes('灵感')||text.includes('去哪玩')||text.includes('我想出去玩')))
+    return {key:'planning',skill:'wlt-trip-planning',scene:'方案规划 · 灵感推荐',html:renderInspiration()};
+  if(key==='planning'&&text.includes('行李')) return {key:'planning',skill:'wlt-trip-planning',scene:'方案规划 · 行前助手',html:(showPackListInline())};
+  return {key,skill:S[key].skill,scene:S[key].name,html:renderers[key](text)};
+}
+function showPackListInline(){setTimeout(showPackList,50);return '<p>🧳 正在为您生成智能行李清单…</p>';}
+
+const renderers={
+  consult(t){
+    if(t.includes('酒店')||t.includes('房')||t.includes('住')||t.includes('入住')) return `
+      <div class="kb-card"><span class="k">🏨</span><div><b style="color:var(--accent)">酒店旅居 · 房型与入住</b><br><span style="color:var(--ink-soft)">家庭套房 1.8m+1.2m 可住3–4人含3早 ¥880起；亲子主题房含儿童床围 ¥720起；14:00入住/12:00退房</span></div></div>
+      <div class="kb-card"><span class="k">🛝</span><div><b style="color:var(--accent)">亲子设施</b><br><span style="color:var(--ink-soft)">室内亲子乐园 10:00–21:00、恒温泳池、婴儿床免费借用</span></div></div>
+      <p class="note">* 示例数据以官方为准。需要我按您的预算匹配更合适的房型吗？</p>`;
+    if(t.includes('菜')||t.includes('吃')||t.includes('餐')||t.includes('餐厅')||t.includes('口味')) return `
+      <div class="kb-card"><span class="k">🍽️</span><div><b style="color:var(--accent)">招牌推荐（2–4人）</b><br><span style="color:var(--ink-soft)">招牌石锅鱼（可调微辣）、非遗酱鸭（甜咸适中）、时令野菜拼盘</span></div></div>
+      <div class="kb-card"><span class="k">🕐</span><div><b style="color:var(--accent)">预订与时段</b><br><span style="color:var(--ink-soft)">午市11:00–14:00 / 晚市17:00–21:00；包间提前1天预订；有儿童餐与儿童座椅</span></div></div>
+      <p class="note">* 示例数据以官方为准。要按您的口味偏好做更精准推荐吗？</p>`;
+    return `
+      <div class="kb-card"><span class="k">⛰️</span><div><b style="color:var(--accent)">开放时间</b><br><span style="color:var(--ink-soft)">旺季 8:30–17:30（17:00停入园），夜间演艺季延至21:00</span></div></div>
+      <div class="kb-card"><span class="k">🎫</span><div><b style="color:var(--accent)">门票优惠</b><br><span style="color:var(--ink-soft)">全价¥120；学生/60–69岁半价；1.2米以下、70岁以上免票；提前1天实名预约可退</span></div></div>
+      <div class="kb-card"><span class="k">👨‍👩‍👧</span><div><b style="color:var(--accent)">亲子适游</b><br><span style="color:var(--ink-soft)">婴儿车租赁¥30/天、母婴室、平缓步道，亲子互动馆与萌宠乐园是孩子最爱</span></div></div>
+      <p class="note">* 示例数据以官方为准。需要我帮您规划半日亲子游览动线吗？</p>`;
+  },
+  planning(t){
+    /* 模糊需求 → 主动追问（对标程心AI「模糊需求转精准方案」） */
+    if(!/\d/.test(t)&&!t.includes('清单')){
+      setTimeout(()=>{startWizard();},650);
+      return `<p>收到！为了给您<b>千人千面</b>的方案，我先确认 3 个关键信息 👇</p>`;
+    }
+    if(t.includes('蜜月')||t.includes('情侣')) return `
+      <h4>💑 蜜月情侣 2 日 · 行程方案</h4>
+      <div class="timeline">
+        <div class="t-item"><b>Day1</b>：古镇漫步穿汉服写真 → 临河景观餐厅 → 山顶观景台日落 → 夜游演艺+温泉汤屋（住观景套房）</div>
+        <div class="t-item"><b>Day2</b>：睡到自然醒+酒店下午茶 → 文创街区打卡买伴手礼 → 返程</div>
+      </div>
+      ${bkCard('hotel','临河观景套房','含双人早+温泉','4.9分 · 980条','¥880','/晚')}
+      <p class="gold">✨ 二次消费：写真旅拍 / 夜游演艺 / 情侣下午茶</p>`;
+    if(t.includes('银发')||t.includes('老人')||t.includes('长辈')) return `
+      <h4>🌿 银发 3 日 · 休闲方案</h4>
+      <div class="timeline">
+        <div class="t-item"><b>Day1</b>：博物馆+园林（配讲解）→ 养生午餐 → 入住低楼层含电梯房</div>
+        <div class="t-item"><b>Day2</b>：古镇游船（不爬坡）→ 茶楼听戏 → 清淡晚餐</div>
+        <div class="t-item"><b>Day3</b>：非遗工坊坐姿手工 → 采购伴手礼返程</div>
+      </div>
+      <p class="note">✨ 节奏：每日步行量控制、午休充分、优先无障碍设施。</p>`;
+    return `
+      <h4>👨‍👩‍👧 亲子 3 日 · 行程方案</h4>
+      <div class="timeline">
+        <div class="t-item"><b>Day1</b>：萌宠乐园（上午人少）→ 亲子餐厅 → 水上乐园 → 夜光巡游（住亲子主题房）</div>
+        <div class="t-item"><b>Day2</b>：非遗工坊动手体验 → 自然课堂研学</div>
+        <div class="t-item"><b>Day3</b>：亲子互动馆 → 文创街区采购返程</div>
+      </div>
+      ${bkCard('hotel','湖畔亲子主题房','含儿童床围+3早','4.8分 · 2316条','¥720','/晚')}
+      <h4>💰 预算清单（示例）</h4>
+      <ul><li>门票¥360 ｜ 住宿¥1440 ｜ 餐饮¥900 ｜ 交通¥200</li></ul>
+      <div class="acts"><span class="act" onclick="showPackList()">🧳 生成行李清单</span><span class="act" onclick="toast('行程已分享到家庭群（模拟）🧡')">🔗 分享协作</span></div>
+      <p class="gold">✨ 二次消费：演艺票 / 研学课程 / 亲子写真 / 伴手礼</p>`;
+  },
+  marketing(t){
+    if(t.includes('视频')||t.includes('脚本')) return `
+      <div class="phone"><div class="ph"><span class="cir"></span><span>抖音 · 短视频脚本（30秒）</span></div>
+      <div class="pbody">
+        <div class="ht">暑期亲子游 · 梦幻谷</div>
+        <p>🎬 镜1｜航拍全景｜「99%的人不知道的亲子秘境」3s<br>
+        🎬 镜2｜亲子体验｜「带娃3天好玩不累」5s<br>
+        🎬 镜3｜卖点快切｜免票/亲子房/水上乐园 8s<br>
+        🎬 镜4｜优惠卡｜「戳左下角抢早鸟票」4s</p>
+      </div></div>
+      <p class="note">* 价格为示例数据。需再生成配套小红书图文吗？</p>`;
+    if(t.includes('活动')||t.includes('促销')||t.includes('策划')) return `
+      <h4>🎉 节庆促销 · 活动策划案</h4>
+      <ul>
+        <li><b>主题</b>：「盛夏撒欢季 · 亲子早鸟惠」</li>
+        <li><b>目标</b>：曝光 50 万次 / 预订 3000 单</li>
+        <li><b>玩法</b>：打卡集章兑好礼 + 早鸟拼团（3人成团立减）</li>
+        <li><b>节奏</b>：预热悬念 → 达人种草爆发 → UGC 长尾</li>
+      </ul>
+      <p class="gold">✨ 联动文创：集章兑限量文创雪糕，强化记忆点。</p>`;
+    return `
+      <div class="phone"><div class="ph"><span class="cir"></span><span>小红书 · 种草笔记</span></div>
+      <div class="pbody">
+        <div class="ht">带娃3天玩遍梦幻谷，这份攻略请收好</div>
+        <p>纠结暑假去哪？上周末带娃实测，好玩不累还省心！<br>
+        1. 门票：1.2米以下免票，成人¥150<br>
+        2. 必玩：萌宠乐园/水上乐园/夜光巡游<br>
+        3. 避坑：婴儿车早点租，餐厅11点前入座<br>
+        还有想知道的评论区问我～</p>
+        <div class="tag">#亲子游 #暑期出行 #梦幻谷</div>
+      </div></div>
+      <p class="gold">✨ 转化引导：戳链接抢暑期亲子早鸟票，数量有限！</p>`;
+  },
+  creative(t){
+    if(t.includes('雪糕')) return `
+      <h4>🍦 文创雪糕提案 ·「一叶知春」</h4>
+      <ul>
+        <li><b>定位</b>：游客打卡 / 18–35岁，¥25–35</li>
+        <li><b>形态</b>：抹茶/茉莉口味，茶树嫩芽造型，附「节气书签」棒</li>
+        <li><b>故事</b>：以「谷雨采茶」非遗叙事，集齐24节气棒签可兑换限定款</li>
+        <li><b>差异</b>：可食用+可收藏（系列化棒签）+强社交打卡属性</li>
+      </ul>
+      <p class="gold">✨ 落地：与老字号茶企联名，季节限定，配短视频种草。</p>`;
+    if(t.includes('体验')||t.includes('服务')) return `
+      <h4>🎭 亲子服务创新 ·「小小讲解员」</h4>
+      <ul>
+        <li><b>体验</b>：孩子30分钟培训 → 为家长讲解1个景点 → 颁发证书+徽章</li>
+        <li><b>情感价值</b>：从「被动参观」到「主动表达」，家长自发晒娃传播</li>
+        <li><b>落地</b>：单场限10组，¥88/组，含证书与纪念徽章</li>
+      </ul>
+      <p class="gold">✨ 差异化：把「讲解」做成可分享的成长纪念，形成 UGC 传播。</p>`;
+    return `
+      <h4>🏮 古镇文创提案 ·「檐下时光」</h4>
+      <ul>
+        <li><b>产品</b>：屋檐剪影+方言slogan印花帆布袋，¥59–79</li>
+        <li><b>人群</b>：18–35岁年轻人，自用+送礼</li>
+        <li><b>系列延展</b>：「巷弄」路牌盲盒、非遗扎染香囊</li>
+      </ul>
+      <p class="gold">✨ 落地：与非遗工坊联名，文创街区上架，配种草文案。</p>`;
+  },
+  matching(t){
+    if(t.includes('亲子')||t.includes('孩子')||t.includes('家庭')) return `
+      <p><b>客群画像</b>：亲子家庭 · 亲子出游 · 中端 · 品质体验</p>
+      <div class="rec"><div class="rk">1</div><div class="rt"><b>亲子主题房 + 亲子套票</b>住宿游玩一体，含儿童早餐与互动馆门票</div><span class="match">匹配 96%</span></div>
+      <div class="rec"><div class="rk">2</div><div class="rt"><b>非遗研学半日营</b>动手体验强，寓教于乐</div><span class="match">匹配 88%</span></div>
+      <div class="rec"><div class="rk">3</div><div class="rt"><b>亲子写真旅拍</b>记录成长，家长爱晒</div><span class="match">匹配 82%</span></div>
+      <p class="gold">✨ 行动建议：首推「亲子房+套票」组合，客单价最高。</p>`;
+    if(t.includes('银发')||t.includes('老人')) return `
+      <p><b>客群画像</b>：银发（健康活跃型）· 休闲放松 · 中端 · 文化深度</p>
+      <div class="rec"><div class="rk">1</div><div class="rt"><b>文化深度3日团</b>博物馆/园林/听戏，节奏舒缓配讲解</div><span class="match">匹配 94%</span></div>
+      <div class="rec"><div class="rk">2</div><div class="rt"><b>低楼层无障碍房</b>近电梯，早餐清淡可选</div><span class="match">匹配 89%</span></div>
+      <div class="rec"><div class="rk">3</div><div class="rt"><b>养生餐套餐</b>清淡软烂，营养均衡</div><span class="match">匹配 85%</span></div>
+      <p class="gold">✨ 行动建议：优先「住宿+养生餐」组合，突出舒适省心。</p>`;
+    return `
+      <p><b>客群画像</b>：情侣 · 打卡社交 · 中端 · 休闲放松</p>
+      <div class="rec"><div class="rk">1</div><div class="rt"><b>观景套房 + 夜游演艺套票</b>出片+仪式感</div><span class="match">匹配 95%</span></div>
+      <div class="rec"><div class="rk">2</div><div class="rt"><b>古镇写真旅拍</b>服装跟拍，满足出片</div><span class="match">匹配 90%</span></div>
+      <div class="rec"><div class="rk">3</div><div class="rt"><b>温泉汤屋下午茶</b>私密放松，契合放空</div><span class="match">匹配 86%</span></div>
+      <p class="gold">✨ 行动建议：首推「套房+演艺」，叠加写真形成「住+玩+拍」。</p>`;
+  },
+  data(t){
+    if(t.includes('看板')) return `
+      <h4>📊 经营驾驶舱 · Bento 看板</h4>
+      <div class="kpis"><div class="kpi"><b>12,480</b><span>实时客流</span></div><div class="kpi"><b>¥1.86M</b><span>今日GMV</span></div><div class="kpi"><b>¥149</b><span>客单价</span></div></div>
+      <div class="chart">
+        <div class="col"><div class="bar" style="height:38%"></div><span>周一</span></div>
+        <div class="col"><div class="bar" style="height:46%"></div><span>周二</span></div>
+        <div class="col"><div class="bar" style="height:55%"></div><span>周三</span></div>
+        <div class="col"><div class="bar" style="height:72%"></div><span>周四</span></div>
+        <div class="col"><div class="bar" style="height:88%"></div><span>周五</span></div>
+        <div class="col"><div class="bar" style="height:100%"></div><span>周六</span></div>
+        <div class="col"><div class="bar" style="height:94%"></div><span>周日</span></div>
+      </div>
+      <p class="note">* 示例数据，供演示看板布局与指标口径。</p>`;
+    if(t.includes('预测')||t.includes('趋势')) return `
+      <h4>📈 客流趋势预测（未来4周）</h4>
+      <div class="chart">
+        <div class="col"><div class="bar" style="height:58%"></div><span>本周</span></div>
+        <div class="col"><div class="bar" style="height:66%"></div><span>W+1</span></div>
+        <div class="col"><div class="bar" style="height:79%"></div><span>W+2</span></div>
+        <div class="col"><div class="bar" style="height:100%"></div><span>W+3</span></div>
+        <div class="col"><div class="bar" style="height:92%"></div><span>W+4</span></div>
+      </div>
+      <p>结论：客流呈上升趋势，<b style="color:var(--accent)">W+3 将迎峰值</b>，建议提前增配服务人员与库存。</p>
+      <p class="note">* 示例数据，供演示预测方法。</p>`;
+    return `
+      <h4>🔍 暑期营收下滑 · 经营诊断</h4>
+      <div class="kpis"><div class="kpi"><b>+8%</b><span>客流环比</span></div><div class="kpi"><b style="color:#f87171">-15%</b><span>客单价</span></div><div class="kpi"><b>32%</b><span>二次消费占比</span></div></div>
+      <ul>
+        <li><b>诊断</b>：客流在涨但客单价降，早鸟折扣拉高客流、拉低客单价，二次消费未能对冲门票折扣损失。</li>
+        <li><b>建议①</b>：早鸟折扣改为「满减/组合套票」保客单价（预期回升8%）；</li>
+        <li><b>建议②</b>：强化演艺/文创高毛利二次消费（预期占比提升至35%）。</li>
+      </ul>
+      <p class="note">* 示例数据，供演示分析诊断方法。</p>`;
+  },
+  quality(t){
+    if(t.includes('投诉')||t.includes('优化')) return `
+      <h4>💬 投诉话术优化</h4>
+      <div class="quote">客服原话：「退票自己看公众号。」<span style="color:#f87171">（❌ 态度冷漠，红线）</span></div>
+      <p>✅ 优化话术：</p>
+      <div class="quote" style="border-color:#34d399">「您好，退票可在公众号『我的订单』自助操作，如遇问题我可以一步步指导您，需要吗？」</div>
+      <p class="note">要点：先共情 → 给方案 → 主动引导，而非推诿。</p>`;
+    return `
+      <h4>🛡️ 客服对话 · 质检评分</h4>
+      <div class="kpis"><div class="kpi"><b style="color:#f87171">3.4</b><span>综合评分/5</span></div><div class="kpi"><b>及格</b><span>质检等级</span></div><div class="kpi"><b style="color:#f87171">1</b><span>红线预警</span></div></div>
+      <div class="score"><span class="lb">专业度</span><div class="bar"><i style="width:80%"></i></div><span class="val">4</span></div>
+      <div class="score"><span class="lb">态度</span><div class="bar"><i style="width:40%"></i></div><span class="val" style="color:#f87171">2</span></div>
+      <div class="score"><span class="lb">效率</span><div class="bar"><i style="width:60%"></i></div><span class="val">3</span></div>
+      <div class="score"><span class="lb">合规</span><div class="bar"><i style="width:90%"></i></div><span class="val">4.5</span></div>
+      <div class="score"><span class="lb">转化</span><div class="bar"><i style="width:50%"></i></div><span class="val">2.5</span></div>
+      <div class="flag">⚠️ 红线：客服回复「不知道」，态度冷漠，一票否决。</div>
+      <p class="note">* 示例数据，供演示五维质检评分。</p>`;
+  },
+  reputation(t){
+    if(t.includes('应对')||t.includes('危机')||t.includes('负面')) return `
+      <h4>🚨 负面舆情 · 危机应对（L2 集中负面）</h4>
+      <div class="flag">⚠️ 「排队2小时体验差」同类差评单周激增 3 倍，已达集中负面级别。</div>
+      <ul>
+        <li><b>48h内</b>：专项分析排队成因，统一回应口径；</li>
+        <li><b>整改</b>：分时预约 + 增设快速通道；</li>
+        <li><b>补偿</b>：受影响游客赠伴手礼并私信跟进。</li>
+      </ul>
+      <p class="gold">✨ 原则：先共情道歉 → 说明改进 → 给补偿 → 引导私信。</p>`;
+    return `
+      <h4>📣 口碑健康度 · 72/100（中等）</h4>
+      <div class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(#34d399 0 62%,#94a3b8 62% 80%,#f87171 80% 100%)"><div class="hole">72</div></div>
+        <div class="legend">
+          <div><span class="sw" style="background:#34d399"></span>正面 62%</div>
+          <div><span class="sw" style="background:#94a3b8"></span>中性 18%</div>
+          <div><span class="sw" style="background:#f87171"></span>负面 20%</div>
+        </div>
+      </div>
+      <p><b>好评亮点</b>：风景好 / 工作人员贴心<br><b>差评痛点</b>：排队太久 / 餐饮贵 / 厕所少</p>
+      <p class="note">* 示例数据，供演示情感分析与口碑诊断。</p>`;
+  },
+};
+
+/* ================================================================
+   UI 渲染
+================================================================ */
+const bento=document.getElementById('bento'), msgs=document.getElementById('msgs'),
+      chips=document.getElementById('chips'), input=document.getElementById('input'),
+      wsTitle=document.getElementById('wsTitle'), wsSkill=document.getElementById('wsSkill');
+let current='overview';
+
+function setAccent(c){ document.documentElement.style.setProperty('--accent',c); }
+
+function renderBento(){
+  bento.innerHTML='';
+  const order=['consult','planning','marketing','creative','matching','data','quality','reputation'];
+  const wide={'consult':1,'data':1};
+  order.forEach(k=>{
+    const s=S[k];
+    const d=document.createElement('div');
+    d.className='bcard'+(wide[k]?' wide':'')+(current===k?' active':'');
+    d.style.setProperty('--c',s.c);
+    d.innerHTML=`<span class="go">进入 →</span><div class="ic">${s.icon}</div><h3>${s.num} ${s.name}</h3><span class="sk">${s.skill}</span><p>${s.desc}</p>`;
+    d.addEventListener('mousemove',e=>{const r=d.getBoundingClientRect();d.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');d.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});
+    d.onclick=()=>{switchScenario(k);document.getElementById('workspace').scrollIntoView({behavior:'smooth',block:'start'});};
+    bento.appendChild(d);
+  });
+}
+function renderChips(){
+  if(wiz) return; /* 向导进行中由 askStep 接管 chips */
+  chips.innerHTML='';
+  const list=current==='overview'?defaultChips:S[current].chips;
+  list.forEach(c=>{const sp=document.createElement('span');sp.className='chip';sp.textContent=c;sp.onclick=()=>{input.value=c;send();};chips.appendChild(sp);});
+}
+function switchScenario(k,silent){
+  current=k;
+  const s=k==='overview'?{name:'智能总览',skill:'wlt-tourism-assistant',c:'#2dd4bf'}:S[k];
+  wsTitle.textContent=s.name; wsSkill.textContent=s.skill; setAccent(s.c);
+  renderBento(); renderChips();
+  if(!silent) toast(`已切换到「${s.name}」场景`);
+}
+
+/* 消息渲染（含满意度反馈） */
+function addMsg(role,html,route){
+  const d=document.createElement('div');d.className='msg '+role;
+  const av=role==='user'?'🙋':(role==='human'?'👩‍💼':'⛰️');
+  let rt='';
+  if(route&&typeof route==='object') rt=`<div class="route"><span class="rstep">🧭 意图识别</span> → <b>${route.scene}</b> <span class="rstep">· 路由 ${route.skill}</span></div>`;
+  let fb='';
+  if(role==='bot') fb=`<div class="fb"><span>👍 有帮助</span><span>👎 需改进</span><span style="cursor:default">反馈将用于优化应答质量</span></div>`;
+  d.innerHTML=`<div class="av">${av}</div><div class="bubble">${rt}${html}${fb}</div>`;
+  if(role==='bot'){
+    const fbs=d.querySelectorAll('.fb span:not(:last-child)');
+    fbs.forEach(b=>b.onclick=()=>{
+      if(d.querySelector('.fb .sel'))return;
+      b.classList.add('sel');
+      toast('感谢反馈！已记录，将持续优化应答 🙏');
+    });
+  }
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+function addThinking(){
+  const d=document.createElement('div');d.className='msg bot';d.id='typing';
+  d.innerHTML=`<div class="av">⛰️</div><div class="bubble"><span class="thinking">正在识别意图…</span><div class="typing"><i></i><i></i><i></i></div></div>`;
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+
+/* 发送主流程：向导激活时输入即作答 */
+function send(){
+  const t=input.value.trim(); if(!t) return;
+  if(wiz){ const v=t; input.value=''; answerWizard(v); return; }
+  addMsg('user',`<p>${esc(t)}</p>`); input.value='';
+  addThinking();
+  const typing=document.getElementById('typing');
+  setTimeout(()=>{
+    if(typing) typing.remove();
+    const r=respond(t);
+    if(r.key&&S[r.key]) setAccent(S[r.key].c);
+    if(current!==r.key&&S[r.key]) switchScenario(r.key,true);
+    addMsg('bot', r.html, r);
+  }, 700);
+}
+
+/* 一键转人工 */
+function humanAgent(){
+  addMsg('human',`
+    <div class="human-card">👩‍💼 <b>人工客服已接入</b>（模拟 · 排队 0 人）<br>
+    您好，我是专属客服小文，已看到您与 AI 助手的完整对话记录，请问需要我为您做什么？<br>
+    <span style="color:var(--ink-faint);font-size:11.5px">* AI 已自动同步会话上下文，无需重复描述问题（AI 解决率约 75%，复杂问题智能转接）</span></div>`);
+}
+
+/* 语音输入模拟 */
+const micBtn=document.getElementById('micBtn');
+const voiceSamples=['帮我规划一个亲子3天行程','翻译一下这个菜单','航班延误了怎么办？','推荐适合亲子的套餐'];
+let vi=0;
+micBtn.onclick=()=>{
+  if(micBtn.classList.contains('rec'))return;
+  micBtn.classList.add('rec');
+  toast('正在聆听…（语音输入模拟）🎙️');
+  setTimeout(()=>{
+    micBtn.classList.remove('rec');
+    input.value=voiceSamples[vi++%voiceSamples.length];
+    input.focus();
+    toast('已识别语音内容，可编辑后发送 ✨');
+  },1300);
+};
+
+/* 三大入口模式 */
+document.querySelectorAll('.mode').forEach(m=>{
+  m.onclick=()=>{
+    document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on'));
+    m.classList.add('on');
+    const mode=m.dataset.mode;
+    if(mode==='think'){ addMsg('user','<p>帮我想（要旅行灵感）</p>'); addThinking(); setTimeout(()=>{const tp=document.getElementById('typing');if(tp)tp.remove();addMsg('bot',renderInspiration(),{skill:'wlt-trip-planning',scene:'灵感推荐'});},600); }
+    if(mode==='book'){ addMsg('user','<p>帮我订（查询可预订产品）</p>'); addThinking(); setTimeout(()=>{const tp=document.getElementById('typing');if(tp)tp.remove();addMsg('bot',renderBooking(''),{skill:'wlt-consult-answer',scene:'智能预订'});},600); }
+    if(mode==='do'){ addMsg('user','<p>帮我办（售后事务）</p>'); addThinking(); setTimeout(()=>{const tp=document.getElementById('typing');if(tp)tp.remove();addMsg('bot',renderAftersale(''),{skill:'wlt-consult-answer',scene:'售后办理'});},600); }
+  };
+});
+
+document.getElementById('sendBtn').onclick=send;
+input.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+document.getElementById('humanBtn').onclick=humanAgent;
+document.getElementById('clearBtn').onclick=()=>{msgs.innerHTML='';wiz=null;renderChips();welcome();};
+
+function welcome(){
+  addMsg('bot',`
+    <p>您好，我是<b>文旅全场景智能助手</b> ⛰️</p>
+    <p>融合前沿旅行 AI 体验，试试这些新能力 👇</p>
+    <ul>
+      <li>🗺️ <b>三步生成行程</b>：目的地 → 天数 → 偏好，多智能体并行定制</li>
+      <li>📅 <b>帮我订</b>：对话内直接预订酒店/门票（可预订卡片）</li>
+      <li>🌐 <b>行中助手</b>：菜单翻译 · 实时导览 · 航班延误改签</li>
+      <li>💡 <b>帮我想</b>：基于热度的目的地灵感推荐</li>
+      <li>👩‍💼 <b>一键转人工</b>：AI 自动同步上下文，无需重复描述</li>
+      <li>🧳 <b>行前清单</b>：智能行李清单 + 家庭协作分享</li>
+    </ul>
+    <p>上方点击业务线卡片或三大入口，或直接输入需求 🎉</p>`,
+    {skill:'wlt-tourism-assistant',scene:'编排入口'}
+  );
+}
+/* ================================================================
+   目的地图鉴数据（图文介绍 + 游客体验 + 社媒评价）
+================================================================ */
+const DESTS=[
+ {id:'gugong',img:'images/gugong.png',name:'故宫博物院',loc:'中国 · 北京',hot:'🔥 热度 TOP1',rate:'4.9',cnt:'52.6万条评价',tags:['历史人文','亲子研学','世界遗产'],
+  intro:'明清两代皇家宫殿，世界上现存规模最大、保存最完整的木质结构古建筑群。中轴线三大殿气势恢宏，珍宝馆与钟表馆藏尽天下奇珍。红墙金瓦之间，每一步都是六百年的历史回响。',
+  info:[['开放时间','8:30-17:00（周一闭馆）'],['门票','旺季¥60 / 淡季¥40，需实名预约'],['建议时长','4-6小时']],
+  exp:[['🧑‍🎓','行走的教科书','带孩子租了讲解器，三大殿一路听下来他比我还认真。珍宝馆的金瓯永固杯太震撼了，建议上午早点进，下午人明显多。','小红书','xhs','2.3w'],
+       ['📸','摄影老白','角楼机位名不虚传！神武门出来左转护城河边，日落前一小时光线绝美，故宫+倒影一次收齐。','抖音','dy','8.6k'],
+       ['🌏','Emma_W','Walked 20k steps and worth every one. The scale is unreal — buy tickets online days ahead, they sell out fast!','微博','wb','1.1k']]},
+ {id:'xihu',img:'images/xihu.png',name:'西湖',loc:'中国 · 杭州',hot:'🌸 春季爆款',rate:'4.8',cnt:'38.9万条评价',tags:['自然湖光','免费开放','骑行'],
+  intro:'「淡妆浓抹总相宜」的千年名湖，免费开放的世界文化遗产。苏堤春晓、断桥残雪、雷峰夕照十景各擅胜场。环湖骑行15公里，或摇橹船慢渡湖心，都是打开杭州的正确方式。',
+  info:[['开放时间','全天开放（游船8:00-17:00）'],['门票','免费，雷峰塔¥40'],['建议时长','1-2天']],
+  exp:[['🚲','骑行少女阿May','环湖骑行yyds！北山街→杨公堤这段人少景美，清晨6点的西湖是另一个世界，雾气还没散像水墨画。','小红书','xhs','5.7w'],
+       ['🍵','茶客老李','虎跑泉泡龙井是真的讲究，泉水甘冽。别在湖边茶楼当冤大头，往龙井村走，茶农家现炒现泡。','微博','wb','3.2k'],
+       ['👨‍👩‍👧','可乐妈妈','带娃坐了摇橹船，船夫会讲白蛇传的野史，孩子听得入迷。苏堤上推车友好，母婴设施齐全。','抖音','dy','9.8k']]},
+ {id:'hongyadong',img:'images/hongyadong.png',name:'洪崖洞',loc:'中国 · 重庆',hot:'🌃 夜景封神',rate:'4.7',cnt:'46.2万条评价',tags:['夜景','网红打卡','美食'],
+  intro:'悬崖上的11层吊脚楼群，入夜后万盏灯火齐明，被网友称为「现实版千与千寻」。一楼出门是马路、十一楼出门还是马路的魔幻地形，是8D重庆的最佳代言。',
+  info:[['开放时间','全天（亮灯19:00-23:00）'],['门票','免费，内部商铺另计'],['建议时长','2-3小时（建议夜间）']],
+  exp:[['🌃','山城小辣椒','拍照请去千厮门大桥上！洪崖洞全景+江面倒影，21点前桥上车少好拍。洞内商业化偏重，逛逛就好，火锅去巷子里吃。','小红书','xhs','12.4w'],
+       ['🎬','阿甘跑重庆','从11楼逛到1楼再爬回来，腿已废但值！每一层都是不同主题街，4楼小吃街的陈麻花排队王。','抖音','dy','6.5k'],
+       ['🌏','TokyoKen','夜の洪崖洞は本当にジブリの世界！ライトアップの時間に合わせて行くのがおすすめ。（夜景仿佛吉卜力世界，建议按亮灯时间去）','微博','wb','890']]},
+ {id:'erhai',img:'images/erhai.png',name:'洱海',loc:'中国 · 大理',hot:'💙 治愈系顶流',rate:'4.8',cnt:'29.4万条评价',tags:['治愈慢游','环海骑行','情侣'],
+  intro:'高原明珠洱海，「风花雪月」四景之源。130公里环海西路串联起喜洲古镇、双廊、小普陀。租一辆电动车环海骑行，左边苍山雪、右边洱海蓝，随手一拍都是桌面壁纸。',
+  info:[['开放时间','全天开放'],['门票','免费（骑行/游船另计）'],['建议时长','2-3天']],
+  exp:[['🛵','环海小分队','电动车环海130公里一天搞定！顺时针走，喜洲粑粑一定要吃咸口的。磻溪村S湾上午9点前到，人少先拍完再走。','小红书','xhs','8.9w'],
+       ['💑','蜜月中的K','双廊的海景客栈醒来看日出，值回房价。老板说11月来最好，游客少、海鸥多、天最蓝。','抖音','dy','4.2k'],
+       ['🌏','Sofia_L','Cycled around the lake for two days. The water is impossibly blue. Erhai taught me what "slow travel" really means.','微博','wb','2.1k']]},
+ {id:'zhangjiajie',img:'images/zhangjiajie.png',name:'张家界国家森林公园',loc:'中国 · 湖南',hot:'⛰️ 此生必去',rate:'4.8',cnt:'33.7万条评价',tags:['自然奇观','阿凡达取景地','玻璃栈道'],
+  intro:'三千奇峰拔地而起，八百秀水蜿蜒其间。石英砂岩峰林地貌举世罕见，是《阿凡达》悬浮山的灵感之源。云雾缭绕时乘百龙天梯直上袁家界，如入仙境。',
+  info:[['开放时间','7:30-18:00'],['门票','¥228（4日有效）'],['建议时长','2-3天']],
+  exp:[['🥾','徒步老炮','金鞭溪7.5公里徒步全程阴凉，夏天避暑绝佳。雨天别失望——云海出现的概率反而最高，我等到了峰林浮出海面的瞬间。','小红书','xhs','6.3w'],
+       ['😱','恐高症患者','玻璃栈道我是闭眼走完的…但天门山99道弯的盘山公路更刺激！司机师傅车技封神。','抖音','dy','11.2k'],
+       ['👨‍👩‍👦','两娃爸爸','百龙天梯孩子坐了三次还喊要。景区大巴免费接驳很方便，带老人建议住山上，少走回头路。','微博','wb','1.5k']]},
+ {id:'fuji',img:'images/fuji.png',name:'富士山',loc:'日本 · 山梨县',hot:'🌸 樱花季预约中',rate:'4.9',cnt:'18.3万条评价',tags:['出境游','樱花','温泉'],
+  intro:'日本最高峰（3776米），近乎完美的锥形火山。春季新仓山浅间公园的五重塔+樱花+富士山构图是世界级明信片；河口湖畔泡温泉远眺雪顶，是冬日最治愈的画面。',
+  info:[['最佳季节','3-4月樱花 / 11-2月雪顶'],['登山期','7-8月开放登山'],['建议时长','2天（河口湖1晚）']],
+  exp:[['🌸','追樱少女','新仓山浅间公园早上7点到！9点后机位全是人。樱花+五重塔+富士山同框那刻，早起值了。','小红书','xhs','9.6w'],
+       ['♨️','温泉控','河口湖湖南庄的露天风吕正对富士山，泡着温泉看日落染红雪顶，人生清单划掉一项。','抖音','dy','3.8k'],
+       ['🌏','BackpackerMax','Climbed overnight to catch the sunrise from the summit (ご来光). Brutal but unforgettable — pack layers!','微博','wb','760']]},
+ {id:'eiffel',img:'images/eiffel.png',name:'埃菲尔铁塔',loc:'法国 · 巴黎',hot:'🗼 欧洲经典',rate:'4.8',cnt:'22.5万条评价',tags:['出境游','地标','浪漫'],
+  intro:'巴黎的象征，1889年为世博会而建的324米钢铁巨人。每至夜幕降临，整点闪烁两万盏灯五分钟，整座城市为之屏息。战神广场野餐远眺，或登顶俯瞰塞纳河两岸，各是一种浪漫。',
+  info:[['开放时间','9:30-23:00'],['门票','电梯登顶€29.4'],['建议时长','半天（推荐傍晚）']],
+  exp:[['💡','巴黎在逃公主','整点闪灯真的会让人尖叫！夏约宫平台是最佳机位，晚上10点那场人最少。登顶记得提前官网订票，现场排队2小时起。','小红书','xhs','7.4w'],
+       ['🥖','背包客老周','战神广场买个法棍+奶酪野餐，铁塔当背景，花€5过出€500的巴黎感。二层餐厅性价比一般，拍照上去就好。','微博','wb','2.9k'],
+       ['🌏','Lucia_R','Took the stairs to the 2nd floor — 674 steps and the view earned every one. The sparkle at night is pure magic.','抖音','dy','1.3k']]},
+ {id:'santorini',img:'images/santorini.png',name:'圣托里尼',loc:'希腊 · 爱琴海',hot:'💍 蜜月圣地',rate:'4.9',cnt:'15.8万条评价',tags:['出境游','蜜月','海岛'],
+  intro:'爱琴海上的火山岛明珠，伊亚小镇的蓝顶教堂与白墙小屋层层叠叠悬于崖壁。全世界最美的日落在这里上演——夕阳沉入海平面时，整个小镇会响起自发的掌声。',
+  info:[['最佳季节','5-10月'],['签证','申根签'],['建议时长','3天2晚']],
+  exp:[['🌅','蜜月旅行家','伊亚日落名不虚传！城堡遗址机位17点就要占位。悬崖酒店带私人泳池的房型，旺季提前半年订。','小红书','xhs','5.2w'],
+       ['📷','旅拍摄影师L','蓝顶教堂其实有3座最出片，导航「Three Bells of Fira」。早上8点前去，光线柔+没人抢机位。','抖音','dy','2.7k'],
+       ['🌏','WanderlustAmy','Sunset in Oia made the whole crowd applaud. Rent an ATV to explore the red beach — best decision ever.','微博','wb','940']]}
+];
+
+const HOTELS=[
+ {img:'images/hotel-xihu.png',e:'🏨',bg:'linear-gradient(135deg,#0d9488,#0369a1)',name:'西湖国宾馆 · 湖景房',loc:'杭州 · 杨公堤18号',badge:'五钻 · 国宾级',tags:['一线湖景','园林式','亲子友好'],rev:'「推窗即是西湖，早餐的定胜糕惊艳」—— 4.9分 · 8621条评价',pr:'¥1,680'},
+ {img:'images/hotel-chongqing.png',e:'🌉',bg:'linear-gradient(135deg,#b45309,#dc2626)',name:'重庆来福士洲际酒店',loc:'重庆 · 朝天门',badge:'高空江景',tags:['270°江景','天际泳池','近洪崖洞'],rev:'「42层看两江交汇，夜景无敌」—— 4.8分 · 6543条评价',pr:'¥1,288'},
+ {img:'images/hotel-erhai.png',e:'🏔️',bg:'linear-gradient(135deg,#0369a1,#7c3aed)',name:'大理洱海天域英迪格',loc:'大理 · 滨海大道',badge:'洱海零距离',tags:['海景阳台','网红泳池','旅拍基地'],rev:'「躺在床上看洱海日出，不想退房」—— 4.8分 · 5876条评价',pr:'¥980'},
+ {img:'images/hotel-beijing.png',e:'⛩️',bg:'linear-gradient(135deg,#dc2626,#b45309)',name:'北京王府井文华东方',loc:'北京 · 王府井',badge:'顶奢地标',tags:['俯瞰故宫','米其林餐厅','管家服务'],rev:'「露台吧能看到紫禁城全景」—— 4.9分 · 3210条评价',pr:'¥3,200'},
+ {img:'images/hotel-zhangjiajie.png',e:'🎋',bg:'linear-gradient(135deg,#0d9488,#34d399)',name:'张家界纳百利皇冠假日',loc:'张家界 · 武陵源',badge:'山景度假',tags:['近森林公园','亲子乐园','土家风味'],rev:'「步行10分钟到景区门口，太方便」—— 4.7分 · 4521条评价',pr:'¥658'},
+ {img:'images/hotel-fuji-onsen.png',e:'♨️',bg:'linear-gradient(135deg,#7c3aed,#0369a1)',name:'河口湖湖南庄温泉旅馆',loc:'日本 · 山梨县',badge:'一泊二食',tags:['露天风吕','正对富士山','怀石料理'],rev:'「私汤房里看富士山日落，此生难忘」—— 4.9分 · 2876条评价',pr:'¥2,450'}
+];
+
+const POSTS=[
+ {img:'images/xihu.png',title:'杭州3天2晚保姆级攻略｜第一次来照着走就行',exc:'Day1西湖环湖+河坊街，Day2灵隐寺+龙井村采茶，Day3西溪湿地摇橹船。附地铁换乘图和8家本地人食堂清单…',tags:['#杭州攻略','#周末去哪'],au:'旅行的意义酱',lk:2341,cm:186},
+ {img:'images/hongyadong.png',title:'重庆48小时特种兵路线｜8D魔幻城市全解锁',exc:'洪崖洞夜景→长江索道→李子坝轻轨穿楼→磁器口。本地人私藏的3家巷子火锅也放上来了，人均60吃到扶墙…',tags:['#重庆旅游','#穷游'],au:'山城走走',lk:1876,cm:243},
+ {img:'images/erhai.png',title:'大理环洱海最全骑行攻略｜附13个免费机位',exc:'顺时针130公里分段详解：喜洲→双廊→小普陀。磻溪S湾、廊桥、理想邦，每个机位的最佳拍摄时间我都标好了…',tags:['#大理','#骑行'],au:'云上的日子',lk:3102,cm:298},
+ {img:'images/fuji.png',title:'东京→富士山当日往返｜交通+机位一篇搞定',exc:'新宿高速巴士2小时直达河口湖，新仓山浅间公园赶早攻略。回程顺路忍野八海，附一日券购买教程…',tags:['#日本自由行','#富士山'],au:'东京情报站',lk:1567,cm:132},
+ {img:'images/zhangjiajie.png',title:'张家界避坑指南｜本地导游不会告诉你的8件事',exc:'门票4日有效怎么用才回本？山上住宿怎么选？百龙天梯和索道怎么组合最省时？雨天装备清单也整理好了…',tags:['#张家界','#避坑'],au:'背包十年',lk:2214,cm:367},
+ {img:'images/santorini.png',title:'圣托里尼3天2晚蜜月行程｜预算1.5w全含',exc:'伊亚日落机位实测、悬崖酒店怎么订到泳池房、红沙滩ATV环岛路线。申根签材料清单附在最后…',tags:['#希腊','#蜜月旅行'],au:'爱琴海的风',lk:1987,cm:215}
+];
+
+/* 渲染景区卡片 */
+function renderDests(){
+  document.getElementById('destGrid').innerHTML=DESTS.map(d=>`
+    <div class="dest" onclick="openDest('${d.id}')">
+      <div class="d-img" style="background-image:url('${d.img}')">
+        <span class="d-hot">${d.hot}</span>
+        <div class="d-loc"><b>${d.name}</b><span>📍 ${d.loc}</span></div>
+      </div>
+      <div class="d-body">
+        <p>${d.intro}</p>
+        <div class="d-meta"><span class="rate">⭐ ${d.rate}</span><span class="cnt">${d.cnt}</span></div>
+        <div class="d-tags">${d.tags.map(t=>`<i>${t}</i>`).join('')}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* 景区详情弹窗：介绍+实用信息+游客体验/社媒评价 */
+function openDest(id){
+  const d=DESTS.find(x=>x.id===id);
+  document.getElementById('modalBox').innerHTML=`
+    <div class="m-hero" style="background-image:url('${d.img}')">
+      <button class="m-close" onclick="closeDest()">✕</button>
+      <div class="m-title"><b>${d.name}</b><span>📍 ${d.loc} · ⭐ ${d.rate} · ${d.cnt}</span></div>
+    </div>
+    <div class="m-body">
+      <h5>📖 景区介绍</h5><p class="intro">${d.intro}</p>
+      <h5>ℹ️ 实用信息（示例数据，以官方为准）</h5>
+      <div class="m-info">${d.info.map(i=>`<div><b>${i[0]}</b>${i[1]}</div>`).join('')}</div>
+      <h5>💬 游客体验 · 社交媒体评价</h5>
+      ${d.exp.map(r=>`<div class="rev"><div class="r-head"><span class="r-av">${r[0]}</span><b>${r[1]}</b><span class="plat ${r[4]}">${r[3]}</span></div><p>${r[2]}</p><div class="r-ft"><span class="lk" onclick="likeRev(this)">🤍 <b>${r[5]}</b></span><span>💬 评论</span><span>↗ 分享</span></div></div>`).join('')}
+      <button class="m-ask" onclick="closeDest();askAI('${d.name}')">🤖 问AI：「${d.name}」怎么玩最值？</button>
+    </div>`;
+  document.getElementById('modalMask').classList.add('show');
+}
+function closeDest(){document.getElementById('modalMask').classList.remove('show');}
+document.getElementById('modalMask').addEventListener('click',e=>{if(e.target.id==='modalMask')closeDest();});
+function likeRev(el){
+  if(el.classList.contains('liked'))return;
+  el.classList.add('liked');el.firstChild.textContent='❤️ ';
+  toast('已点赞（模拟）❤️');
+}
+function askAI(name){
+  document.getElementById('workspace').scrollIntoView({behavior:'smooth'});
+  input.value=`帮我规划${name}的行程，介绍下值得玩的点`;
+  setTimeout(send,500);
+}
+
+/* 渲染酒店 */
+function renderHotels(){
+  document.getElementById('hotelGrid').innerHTML=HOTELS.map(h=>`
+    <div class="hotel">
+      <div class="h-top"${h.img?` style="background-image:url('${h.img}')"`:` style="background:${h.bg}"`}>${h.img?'':h.e}<span class="h-badge">${h.badge}</span></div>
+      <div class="h-body">
+        <b>${h.name}</b><div class="h-loc">📍 ${h.loc}</div>
+        <div class="h-tags">${h.tags.map(t=>`<i>${t}</i>`).join('')}</div>
+        <div class="h-rev">${h.rev}</div>
+        <div class="h-ft"><span class="pr">${h.pr}<small> /晚起</small></span><button class="hbtn" onclick="bookBtn(this,'${h.name}')">预订</button></div>
+      </div>
+    </div>`).join('');
+}
+
+/* 渲染攻略社区 */
+function renderFeed(){
+  document.getElementById('feedGrid').innerHTML=POSTS.map(p=>`
+    <div class="post" onclick="toast('已打开攻略全文（模拟）📖')">
+      <div class="p-img" style="background-image:url('${p.img}')"></div>
+      <div class="p-body">
+        <b>${p.title}</b><div class="exc">${p.exc}</div>
+        <div class="p-tags">${p.tags.map(t=>`<i>${t}</i>`).join('')}</div>
+        <div class="p-ft"><span class="p-av">✍️</span><span class="au">${p.au}</span>
+          <div class="acts2"><span onclick="event.stopPropagation();likePost(this)">🤍 ${p.lk}</span><span>💬 ${p.cm}</span></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function likePost(el){
+  if(el.classList.contains('liked'))return;
+  el.classList.add('liked');el.textContent='❤️ '+(parseInt(el.textContent.replace(/[^\d]/g,''))+1);
+  toast('已点赞攻略（模拟）❤️');
+}
+
+/* Tabs 切换 */
+document.querySelectorAll('#tabs .tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('pane-'+t.dataset.pane).classList.add('on');
+  };
+});
+
+/* 交通票务查询（模拟） */
+let transType='flight';
+document.querySelectorAll('.trans-head .th').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.trans-head .th').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');transType=t.dataset.tt;searchTrans();
+  };
+});
+document.getElementById('swapBtn').onclick=()=>{
+  const f=document.getElementById('fromCity'),t=document.getElementById('toCity');
+  [f.value,t.value]=[t.value,f.value];searchTrans();
+};
+document.getElementById('transSearch').onclick=searchTrans;
+const FLIGHTS=[
+  ['CA1502','国航','07:30','09:55','2h25m','直飞','¥680','3.2折'],
+  ['MU5107','东航','10:15','12:40','2h25m','直飞','¥720','3.5折'],
+  ['CZ3909','南航','13:40','16:05','2h25m','直飞','¥650','3.0折 · 仅剩4张'],
+  ['HU7601','海航','18:20','20:50','2h30m','直飞','¥580','2.8折 · 夜航特惠']
+];
+const TRAINS=[
+  ['G6','复兴号','07:00','11:34','4h34m','二等座 ¥553','一等座 ¥933'],
+  ['G14','复兴号','09:00','13:26','4h26m','二等座 ¥553','一等座 ¥933'],
+  ['G102','和谐号','12:30','17:48','5h18m','二等座 ¥553','有票'],
+  ['D706','动卧','20:10','07:42+1','11h32m','二等座 ¥408','动卧 ¥690']
+];
+function searchTrans(){
+  const f=document.getElementById('fromCity').value||'上海', t=document.getElementById('toCity').value||'北京';
+  const box=document.getElementById('ticketList');
+  const data=transType==='flight'?FLIGHTS:TRAINS;
+  box.innerHTML=data.map(d=>{
+    if(transType==='flight') return `<div class="ticket">
+      <div class="t-time"><b>${d[2]}</b><span>${f}</span></div>
+      <div class="t-mid">✈️<div class="dur">${d[4]} · ${d[5]}</div></div>
+      <div class="t-time"><b>${d[3]}</b><span>${t}</span></div>
+      <div class="t-info"><b>${d[0]} · ${d[1]}</b>${d[7]}</div>
+      <div class="t-pr"><b>${d[6]}</b><small>起</small></div>
+      <button class="t-btn" onclick="bookBtn(this,'${d[0]} ${f}→${t}')">预订</button></div>`;
+    return `<div class="ticket">
+      <div class="t-time"><b>${d[2]}</b><span>${f}</span></div>
+      <div class="t-mid">🚄<div class="dur">${d[4]}</div></div>
+      <div class="t-time"><b>${d[3]}</b><span>${t}</span></div>
+      <div class="t-info"><b>${d[0]} · ${d[1]}</b>${d[5]}<span class="seat">${d[6]}</span></div>
+      <div class="t-pr"><b>${d[5].replace(/[^¥\d]/g,'')?'¥'+d[5].replace(/[^\d]/g,''):''}</b><small>二等座起</small></div>
+      <button class="t-btn" onclick="bookBtn(this,'${d[0]} ${f}→${t}')">预订</button></div>`;
+  }).join('');
+  toast(`已查询 ${f} → ${t}（模拟数据）✅`);
+}
+
+/* ================================================================
+   五大能力分类 · 20个能力Skill 矩阵
+================================================================ */
+const MATRIX=[
+ {cat:'📊 数据类',c:'#34d399',items:[
+  ['用户画像标签','wlt-user-profile','四类标签体系，客群分层运营','给我们的客群做个画像分层'],
+  ['客流实时分析','wlt-crowd-analysis','热力分布·拥堵预警·分时预约','现在景区客流如何，要限流吗？'],
+  ['文旅知识库','wlt-knowledge-base','问答知识结构化与更新机制','帮我设计景区知识库结构'],
+  ['舆情需求挖掘','wlt-reputation','情感分析·危机分级响应','分析最近的差评']]},
+ {cat:'💬 交互类',c:'#38bdf8',items:[
+  ['多语种对话','wlt-multilingual','文化适配的母语级服务','把购票须知翻译成英文'],
+  ['AR实景识别','wlt-ar-guide','拍照识景·虚实结合导览','设计一个AR导览方案'],
+  ['语音合成/识别','wlt-voice-service','语音客服·导览播报·无障碍','设计语音客服对话流程'],
+  ['图像内容理解','wlt-vision','菜单翻译·识图讲解·出片诊断','翻译一下这个菜单']]},
+ {cat:'✍️ 生成类',c:'#fb7185',items:[
+  ['营销文案生成','wlt-marketing-content','多平台种草文案·活动策划','写一篇暑期亲子游小红书文案'],
+  ['文创设计生成','wlt-cultural-creative','文化提炼·创意矩阵·提案','为古镇设计一款文创产品'],
+  ['方案规划生成','wlt-trip-planning','三步出行程·千人千面','帮我规划3天行程'],
+  ['短视频脚本','wlt-video-script','分镜脚本·钩子公式·平台适配','写一个抖音短视频脚本']]},
+ {cat:'🧭 决策类',c:'#fbbf24',items:[
+  ['个性化推荐','wlt-customer-matching','画像×产品精准匹配','情侣周末想放松，推荐什么？'],
+  ['路径规划','wlt-route-planning','动线设计·避堵·无障碍','设计一条景区不绕路的动线'],
+  ['定价策略','wlt-pricing','动态定价·套餐组合·收益测算','淡季门票要不要降价？'],
+  ['客诉分级处置','wlt-service-quality','质检评分·投诉分级SOP','投诉话术怎么优化？']]},
+ {cat:'⚙️ 执行类',c:'#a78bfa',items:[
+  ['订单自动处理','wlt-order-processing','确认/退改/退款全链路','设计门票退改规则'],
+  ['工单智能派单','wlt-ticket-dispatch','分类派单·SLA时效闭环','设计投诉工单流转规则'],
+  ['消息精准推送','wlt-push-message','分群触达·频控·打开率优化','策划一次活动推送方案'],
+  ['数据报表生成','wlt-data-analysis','经营看板·诊断·预测','做个经营数据看板']]}
+];
+function renderMatrix(){
+  document.getElementById('matrix').innerHTML=MATRIX.map(m=>`
+    <div class="mcol" style="--mc:${m.c}">
+      <div class="mc-h" style="color:${m.c}"><span class="dotc" style="background:${m.c}"></span>${m.cat}</div>
+      ${m.items.map(i=>`<div class="mc-item" onclick="askSkill('${i[3]}')"><b>${i[0]}</b><span>${i[1]}</span><p>${i[2]}</p></div>`).join('')}
+    </div>`).join('');
+}
+function askSkill(q){
+  document.getElementById('workspace').scrollIntoView({behavior:'smooth'});
+  input.value=q;setTimeout(send,500);
+}
+
+renderBento(); renderChips(); welcome();
+renderDests(); renderHotels(); renderFeed(); renderMatrix(); searchTrans();
+</script>
+</body>
+</html>
